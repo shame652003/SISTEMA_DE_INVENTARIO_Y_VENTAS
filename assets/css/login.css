@@ -1,0 +1,276 @@
+/* ============================================
+   LOGIN / AUTH – Tono Naranja Suave, Sin Borde Animado, Texto Legible
+   ============================================ */
+
+/* Fondo con gradiente naranja suave y elegante */
+.auth-container {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 40%, #fed7aa 70%, #fdba74 100%);
+    padding: 1rem;
+    overflow: hidden;
+}
+
+/* Tarjeta principal – Glassmorphism suave, sin borde animado */
+.auth-card {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    border: none;
+    border-radius: 1.5rem;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    box-shadow:
+        0 25px 50px -12px rgba(124, 45, 18, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+    overflow: hidden;
+    z-index: 1;
+}
+
+/* Borde sutil naranja estático (sin animación) */
+.auth-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 1.5rem;
+    padding: 2px;
+    background: linear-gradient(135deg, rgba(251, 146, 60, 0.5), rgba(234, 88, 12, 0.3));
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.auth-card .card-body {
+    padding: 2.5rem 2rem;
+    position: relative;
+    z-index: 3;
+}
+
+@media (min-width: 576px) {
+    .auth-card .card-body {
+        padding: 3rem 2.5rem;
+    }
+}
+
+/* Animación de entrada */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Icono de marca con círculo naranja suave */
+.auth-brand {
+    width: 80px;
+    height: 80px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fb923c, #ea580c);
+    color: #fff;
+    font-size: 2.2rem;
+    box-shadow: 0 10px 25px rgba(234, 88, 12, 0.35);
+    animation: pulseBrand 2.5s ease-in-out infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes pulseBrand {
+    0%, 100% { transform: scale(1); box-shadow: 0 10px 25px rgba(234, 88, 12, 0.35); }
+    50%      { transform: scale(1.05); box-shadow: 0 15px 35px rgba(234, 88, 12, 0.45); }
+}
+
+/* Títulos – Texto oscuro para máxima legibilidad */
+.auth-title {
+    font-weight: 700;
+    color: #7c2d12;
+    letter-spacing: -0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.auth-subtitle {
+    color: #9a3412;
+    font-size: 0.95rem;
+    margin-bottom: 0;
+}
+
+/* Input groups – iconos integrados */
+.auth-input-group .input-group-text {
+    background: #fff7ed;
+    border: 1px solid #fdba74;
+    border-right: none;
+    color: #c2410c;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    border-radius: 0.75rem 0 0 0.75rem;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.auth-input-group .form-control {
+    background: #fff7ed;
+    border: 1px solid #fdba74;
+    border-left: none;
+    border-radius: 0 0.75rem 0.75rem 0;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    color: #431407;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.auth-input-group .form-control::placeholder {
+    color: #fdba74;
+}
+
+.auth-input-group .form-control:focus {
+    background: #fff;
+    border-color: #f97316;
+    box-shadow: 0 0 0 0.25rem rgba(249, 115, 22, 0.2);
+    color: #431407;
+}
+
+.auth-input-group .form-control:focus + .input-group-text,
+.auth-input-group .form-control:focus ~ .input-group-text {
+    border-color: #f97316;
+    background: #fff;
+    color: #ea580c;
+}
+
+/* Icono de toggle contraseña */
+.btn-toggle-password {
+    border: 1px solid #fdba74;
+    border-left: none;
+    border-radius: 0 0.75rem 0.75rem 0;
+    background: #fff7ed;
+    color: #c2410c;
+    padding: 0 1rem;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+}
+
+.btn-toggle-password:hover {
+    color: #ea580c;
+    background: #ffedd5;
+}
+
+.btn-toggle-password:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+/* Botón principal */
+.btn-auth {
+    background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
+    border: none;
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+    color: #fff;
+    transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+    box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+}
+
+.btn-auth:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(234, 88, 12, 0.45);
+    filter: brightness(1.05);
+}
+
+.btn-auth:active {
+    transform: translateY(0);
+}
+
+.btn-auth:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Labels sobre los inputs */
+.form-label.fw-semibold.text-secondary {
+    color: #9a3412 !important;
+}
+
+/* Enlaces */
+.auth-link {
+    color: #c2410c;
+    font-weight: 500;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.auth-link:hover {
+    color: #7c2d12;
+    text-decoration: underline;
+}
+
+/* Separador sutil */
+.auth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #c2410c;
+    font-size: 0.85rem;
+    margin: 1.5rem 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #fdba74;
+}
+
+.auth-divider::before { margin-right: 0.75rem; }
+.auth-divider::after  { margin-left: 0.75rem; }
+
+/* Footer pequeño de la tarjeta */
+.auth-footer {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #c2410c;
+    margin-top: 1.5rem;
+}
+
+/* Quitar flechas del input number */
+.auth-input-group input[type="number"]::-webkit-outer-spin-button,
+.auth-input-group input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.auth-input-group input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* Eliminar outline azul por defecto de Bootstrap */
+.auth-input-group .form-control:focus {
+    outline: none;
+}
+
+/* Reducir movimiento para usuarios con preferencias */
+@media (prefers-reduced-motion: reduce) {
+    .auth-container,
+    .auth-brand {
+        animation: none;
+        transition: none;
+    }
+}

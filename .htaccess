@@ -1,0 +1,10 @@
+RewriteEngine On
+
+# No redirigir si el archivo ya existe (CSS, JS, imágenes)
+RewriteCond %{REQUEST_FILENAME} !-f
+
+# No redirigir si ya está dentro de /public/ o /vendor/
+RewriteCond %{REQUEST_URI} !/public/ [NC]
+
+# Redirigir todo lo demás al directorio public/
+RewriteRule ^(.*)$ public/$1 [L]

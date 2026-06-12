@@ -1,0 +1,14 @@
+{
+  "name": "sistema/ventas-inventario",
+  "description": "Sistema de Ventas e Inventarios - MVC con PHP Puro",
+  "type": "project",
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    }
+  },
+  "require": {
+    "php": ">=8.0",
+    "firebase/php-jwt": "^6.0"
+  }
+}
