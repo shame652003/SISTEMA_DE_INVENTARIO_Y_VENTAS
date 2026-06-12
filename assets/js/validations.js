@@ -75,6 +75,51 @@ const Validaciones = {
     },
 
     /**
+     * Valida que solo contenga letras (sin números ni símbolos)
+     */
+    soloLetras: function (selector, nombre = 'Este campo') {
+        const valor = $(selector).val().trim();
+        const regex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
+        if (valor && !regex.test(valor)) {
+            $(selector).addClass('is-invalid');
+            this._mostrarError(selector, `${nombre} solo debe contener letras.`);
+            return false;
+        }
+        $(selector).removeClass('is-invalid');
+        return true;
+    },
+
+    /**
+     * Valida formato de teléfono (Venezuela)
+     */
+    telefono: function (selector, nombre = 'Teléfono') {
+        const valor = $(selector).val().trim();
+        const regex = /^[0-9]{4}[-]?[0-9]{7}$/;
+        if (valor && !regex.test(valor)) {
+            $(selector).addClass('is-invalid');
+            this._mostrarError(selector, `${nombre} debe tener formato válido (Ej: 0414-1234567).`);
+            return false;
+        }
+        $(selector).removeClass('is-invalid');
+        return true;
+    },
+
+    /**
+     * Valida que sea un número entero positivo (cédula)
+     */
+    cedula: function (selector, nombre = 'Cédula') {
+        const valor = $(selector).val().trim();
+        const regex = /^[0-9]+$/;
+        if (valor && !regex.test(valor)) {
+            $(selector).addClass('is-invalid');
+            this._mostrarError(selector, `${nombre} debe contener solo números.`);
+            return false;
+        }
+        $(selector).removeClass('is-invalid');
+        return true;
+    },
+
+    /**
      * Valida todos los campos requeridos de un formulario
      */
     validarFormulario: function (formSelector) {

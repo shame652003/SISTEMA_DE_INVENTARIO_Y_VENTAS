@@ -57,13 +57,14 @@ class AuthController extends Controller
         $this->json([
             'ok'            => true,
             'refresh_token' => $refreshToken,   // solo refresh token a JS
-            'usuario'       => [
-                'cedula'    => $usuario['cedula'],
-                'nombre'    => trim($usuario['nombre'] . ' ' . ($usuario['apellido'] ?? '')),
-                'correo'    => $usuario['correo'],
-                'idRol'     => $usuario['idRol'],
-                'nombreRol' => $usuario['nombreRol'] ?? '',
-            ],
+                'usuario'       => [
+                    'cedula'    => $usuario['cedula'],
+                    'nombre'    => trim($usuario['nombre'] . ' ' . ($usuario['apellido'] ?? '')),
+                    'correo'    => $usuario['correo'],
+                    'idRol'     => $usuario['idRol'],
+                    'nombreRol' => $usuario['nombreRol'] ?? '',
+                    'img'       => $usuario['img'] ?? '',
+                ],
         ]);
     }
 

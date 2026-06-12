@@ -37,14 +37,20 @@ $router->get('/auth/me',      'AuthController', 'me',     'auth');
 $router->get('/dashboard', 'DashboardController', 'index', 'auth');
 
 // Usuarios
-$router->get('/usuarios',           'UsuarioController', 'index',   'auth');
+$router->get('/usuarios',                'UsuarioController', 'index',        'auth');
 $router->post('/usuarios/listar',   'UsuarioController', 'listar',  'auth');
-$router->post('/usuarios/guardar',  'UsuarioController', 'guardar', 'auth');
-$router->post('/usuarios/eliminar', 'UsuarioController', 'eliminar','auth');
+$router->post('/usuarios/obtener',  'UsuarioController', 'obtener', 'auth');
+$router->post('/usuarios/guardar',      'UsuarioController', 'guardar',      'auth');
+$router->post('/usuarios/eliminar',     'UsuarioController', 'eliminar',     'auth');
+$router->post('/usuarios/roles/listar',  'UsuarioController', 'listarRoles',  'auth');
+$router->post('/usuarios/roles/guardar', 'UsuarioController', 'guardarRol',   'auth');
+$router->post('/usuarios/roles/eliminar','UsuarioController', 'eliminarRol',  'auth');
 
 // Perfil
-$router->get('/perfil',             'PerfilController', 'index',     'auth');
-$router->post('/perfil/actualizar', 'PerfilController', 'actualizar','auth');
+$router->get('/perfil',                  'PerfilController', 'index',        'auth');
+$router->post('/perfil/obtener',        'PerfilController', 'obtener',       'auth');
+$router->post('/perfil/actualizar',     'PerfilController', 'actualizar',    'auth');
+$router->post('/perfil/cambiar-clave', 'PerfilController', 'cambiarClave',  'auth');
 
 // Bitácora
 $router->get('/bitacora',          'BitacoraController', 'index',  'auth');

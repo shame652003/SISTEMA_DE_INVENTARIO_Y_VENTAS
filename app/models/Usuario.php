@@ -23,7 +23,7 @@ class Usuario extends Model
         return $this->fetch(
             "SELECT u.*, r.nombreRol FROM {$this->table} u
              INNER JOIN rol r ON r.idRol = u.idRol
-             WHERE u.cedula = ? AND u.status = 1",
+             WHERE u.cedula = ?",
             [$cedula]
         );
     }

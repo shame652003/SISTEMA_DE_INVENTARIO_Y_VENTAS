@@ -97,14 +97,15 @@ if ($tieneSesion) {
     <?php if ($tieneSesion): ?>
     <div class="sidebar-footer">
         <a href="<?= $url('/perfil') ?>" class="d-flex align-items-center gap-2 text-decoration-none text-white mb-2">
-            <div class="profile-avatar-sm">
+            <img id="sidebar-avatar-img" src="<?= htmlspecialchars($usuario['img'] ?? '') ?>" alt="" class="profile-avatar-sm" style="object-fit: cover; <?= !empty($usuario['img']) ? '' : 'display: none;' ?>">
+            <div id="sidebar-avatar-text" class="profile-avatar-sm" style="<?= !empty($usuario['img']) ? 'display: none;' : '' ?>">
                 <?= $iniciales ?>
             </div>
             <div class="flex-grow-1" style="min-width: 0;">
-                <div class="fw-semibold text-truncate" style="font-size: 0.85rem; color: #fff;">
+                <div id="sidebar-nombre" class="fw-semibold text-truncate" style="font-size: 0.85rem; color: #fff;">
                     <?= htmlspecialchars($usuario['nombre'] ?? 'Usuario') ?>
                 </div>
-                <div class="text-truncate" style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">
+                <div id="sidebar-rol" class="text-truncate" style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">
                     <?= htmlspecialchars($usuario['nombreRol'] ?? 'Rol') ?>
                 </div>
             </div>

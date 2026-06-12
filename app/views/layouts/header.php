@@ -11,6 +11,10 @@
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
+    <!-- DataTables Bootstrap 5 -->
+    <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="icon" type="image/png" href="https://img.icons8.com/?size=100&id=104073&format=png&color=000000">
@@ -51,14 +55,15 @@ if ($tieneSesion) {
         <!-- Dropdown de perfil -->
         <div class="dropdown">
             <button class="btn d-flex align-items-center gap-2 p-1 border-0 bg-transparent" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <div class="profile-avatar">
+                <img id="header-avatar-img" src="<?= htmlspecialchars($usuario['img'] ?? '') ?>" alt="" class="profile-avatar" style="object-fit: cover; <?= !empty($usuario['img']) ? '' : 'display: none;' ?>">
+                <div id="header-avatar-text" class="profile-avatar" style="<?= !empty($usuario['img']) ? 'display: none;' : '' ?>">
                     <?= $iniciales ?>
                 </div>
                 <div class="text-start d-none d-lg-block">
-                    <div class="fw-semibold text-white" style="font-size: 0.9rem; line-height: 1.2;">
+                    <div id="header-nombre" class="fw-semibold text-white" style="font-size: 0.9rem; line-height: 1.2;">
                         <?= htmlspecialchars($usuario['nombre'] ?? 'Usuario') ?>
                     </div>
-                    <div class="text-white-50" style="font-size: 0.75rem; line-height: 1.2;">
+                    <div id="header-rol" class="text-white-50" style="font-size: 0.75rem; line-height: 1.2;">
                         <?= htmlspecialchars($usuario['nombreRol'] ?? 'Rol') ?>
                     </div>
                 </div>
