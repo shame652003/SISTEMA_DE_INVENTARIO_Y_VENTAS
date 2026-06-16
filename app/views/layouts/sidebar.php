@@ -70,7 +70,7 @@ if ($tieneSesion) {
             </li>
             <?php endif; ?>
 
-            <?php if (Permisos::puede('clientes') || Permisos::puede('productos') || Permisos::puede('entradas') || Permisos::puede('salidas') || Permisos::puede('ventas')): ?>
+            <?php if (Permisos::puede('clientes') || Permisos::puede('productos') || Permisos::puede('entradas') || Permisos::puede('salidas') || Permisos::puede('ventas') || Permisos::puede('stock')): ?>
             <li class="sidebar-section-title">Operaciones</li>
             <?php endif; ?>
 
@@ -110,6 +110,14 @@ if ($tieneSesion) {
             <li class="nav-item">
                 <a href="<?= $url('/ventas') ?>" class="nav-link <?= ($seccion ?? '') === 'ventas' ? 'active' : '' ?>">
                     <i class="bi bi-cart-check"></i> Ventas
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <?php if (Permisos::puede('stock')): ?>
+            <li class="nav-item">
+                <a href="<?= $url('/stock') ?>" class="nav-link <?= ($seccion ?? '') === 'stock' ? 'active' : '' ?>">
+                    <i class="bi bi-box-seam"></i> Stock
                 </a>
             </li>
             <?php endif; ?>

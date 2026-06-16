@@ -88,6 +88,10 @@ $router->get('/ventas',          'VentaController', 'index',  'auth');
 $router->post('/ventas/listar',  'VentaController', 'listar', 'auth');
 $router->post('/ventas/guardar', 'VentaController', 'guardar','auth');
 
+// Stock
+$router->get('/stock',         'StockController', 'index',  'auth');
+$router->post('/stock/listar', 'StockController', 'listar', 'auth');
+
 // Reportes
 $router->get('/reportes/pagos',            'ReportePagoController', 'index',   'auth');
 $router->post('/reportes/pagos/generar',   'ReportePagoController', 'generar', 'auth');

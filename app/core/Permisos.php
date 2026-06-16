@@ -6,19 +6,19 @@ class Permisos
 {
     private static array $modulosSuper = [
         'dashboard', 'usuarios', 'perfil', 'bitacora', 'ayuda',
-        'clientes', 'productos', 'entradas', 'salidas', 'ventas',
+        'clientes', 'productos', 'entradas', 'salidas', 'ventas', 'stock',
         'reportes_pagos', 'reportes_generales'
     ];
 
     private static array $modulosAdmin = [
         'dashboard', 'perfil', 'bitacora', 'ayuda',
-        'clientes', 'productos', 'entradas', 'salidas', 'ventas',
+        'clientes', 'productos', 'entradas', 'salidas', 'ventas', 'stock',
         'reportes_pagos', 'reportes_generales'
     ];
 
     private static array $modulosDefault = [
         'dashboard', 'perfil', 'ayuda',
-        'clientes', 'ventas', 'reportes_pagos'
+        'clientes', 'ventas', 'stock', 'reportes_pagos'
     ];
 
     public static function puede(string $modulo): bool
