@@ -8,6 +8,7 @@ class SalidaController extends Controller
 {
     public function index(): void
     {
+        if (!$this->verificarPermisoVista('salidas')) return;
         $this->render('salidas/salidas', [
             'titulo' => 'Salidas de Productos',
             'seccion' => 'salidas',
@@ -17,12 +18,14 @@ class SalidaController extends Controller
 
     public function listar(): void
     {
+        if (!$this->verificarPermiso('salidas')) return;
         // TODO: Obtener salidas de la BD
         $this->json(['data' => []]);
     }
 
     public function guardar(): void
     {
+        if (!$this->verificarPermiso('salidas')) return;
         // TODO: Registrar nueva salida de productos
         $this->json(['ok' => true, 'mensaje' => 'Salida registrada correctamente.']);
     }

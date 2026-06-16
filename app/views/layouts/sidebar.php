@@ -1,6 +1,7 @@
 <?php
 use App\Core\UrlCipher;
 use App\Core\AuthMiddleware;
+use App\Core\Permisos;
 
 $url = fn($path) => BASE_URL . UrlCipher::encrypt($path);
 
@@ -25,72 +26,113 @@ if ($tieneSesion) {
 
     <nav class="sidebar-nav flex-grow-1">
         <ul class="nav flex-column">
+            <?php if (Permisos::puede('dashboard')): ?>
             <li class="nav-item">
                 <a href="<?= $url('/dashboard') ?>" class="nav-link <?= ($seccion ?? '') === 'dashboard' ? 'active' : '' ?>">
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
             </li>
+            <?php endif; ?>
 
+            <?php if (Permisos::puede('usuarios') || Permisos::puede('perfil') || Permisos::puede('bitacora') || Permisos::puede('ayuda')): ?>
             <li class="sidebar-section-title">Administración</li>
+            <?php endif; ?>
+
+            <?php if (Permisos::puede('usuarios')): ?>
             <li class="nav-item">
                 <a href="<?= $url('/usuarios') ?>" class="nav-link <?= ($seccion ?? '') === 'usuarios' ? 'active' : '' ?>">
                     <i class="bi bi-people"></i> Usuarios
                 </a>
             </li>
+            <?php endif; ?>
+
+            <?php if (Permisos::puede('perfil')): ?>
             <li class="nav-item">
                 <a href="<?= $url('/perfil') ?>" class="nav-link <?= ($seccion ?? '') === 'perfil' ? 'active' : '' ?>">
                     <i class="bi bi-person-circle"></i> Perfil
                 </a>
             </li>
+            <?php endif; ?>
+
+            <?php if (Permisos::puede('bitacora')): ?>
             <li class="nav-item">
                 <a href="<?= $url('/bitacora') ?>" class="nav-link <?= ($seccion ?? '') === 'bitacora' ? 'active' : '' ?>">
                     <i class="bi bi-journal-text"></i> Bitácora
                 </a>
             </li>
+            <?php endif; ?>
+
+            <?php if (Permisos::puede('ayuda')): ?>
             <li class="nav-item">
                 <a href="<?= $url('/ayuda') ?>" class="nav-link <?= ($seccion ?? '') === 'ayuda' ? 'active' : '' ?>">
                     <i class="bi bi-question-circle"></i> Ayuda
                 </a>
             </li>
+            <?php endif; ?>
 
+            <?php if (Permisos::puede('clientes') || Permisos::puede('productos') || Permisos::puede('entradas') || Permisos::puede('salidas') || Permisos::puede('ventas')): ?>
             <li class="sidebar-section-title">Operaciones</li>
+            <?php endif; ?>
+
+            <?php if (Permisos::puede('clientes')): ?>
             <li class="nav-item">
                 <a href="<?= $url('/clientes') ?>" class="nav-link <?= ($seccion ?? '') === 'clientes' ? 'active' : '' ?>">
                     <i class="bi bi-person-lines-fill"></i> Clientes
                 </a>
             </li>
+            <?php endif; ?>
+
+            <?php if (Permisos::puede('productos')): ?>
             <li class="nav-item">
                 <a href="<?= $url('/productos') ?>" class="nav-link <?= ($seccion ?? '') === 'productos' ? 'active' : '' ?>">
                     <i class="bi bi-box-seam"></i> Productos
                 </a>
             </li>
+            <?php endif; ?>
+
+            <?php if (Permisos::puede('entradas')): ?>
             <li class="nav-item">
                 <a href="<?= $url('/entradas') ?>" class="nav-link <?= ($seccion ?? '') === 'entradas' ? 'active' : '' ?>">
                     <i class="bi bi-box-arrow-in-down"></i> Entradas
                 </a>
             </li>
+            <?php endif; ?>
+
+            <?php if (Permisos::puede('salidas')): ?>
             <li class="nav-item">
                 <a href="<?= $url('/salidas') ?>" class="nav-link <?= ($seccion ?? '') === 'salidas' ? 'active' : '' ?>">
                     <i class="bi bi-box-arrow-up"></i> Salidas
                 </a>
             </li>
+            <?php endif; ?>
+
+            <?php if (Permisos::puede('ventas')): ?>
             <li class="nav-item">
                 <a href="<?= $url('/ventas') ?>" class="nav-link <?= ($seccion ?? '') === 'ventas' ? 'active' : '' ?>">
                     <i class="bi bi-cart-check"></i> Ventas
                 </a>
             </li>
+            <?php endif; ?>
 
+            <?php if (Permisos::puede('reportes_pagos') || Permisos::puede('reportes_generales')): ?>
             <li class="sidebar-section-title">Reportes</li>
+            <?php endif; ?>
+
+            <?php if (Permisos::puede('reportes_pagos')): ?>
             <li class="nav-item">
                 <a href="<?= $url('/reportes/pagos') ?>" class="nav-link <?= ($seccion ?? '') === 'reportes_pagos' ? 'active' : '' ?>">
                     <i class="bi bi-cash-stack"></i> Reportes de Pagos
                 </a>
             </li>
+            <?php endif; ?>
+
+            <?php if (Permisos::puede('reportes_generales')): ?>
             <li class="nav-item">
                 <a href="<?= $url('/reportes/generales') ?>" class="nav-link <?= ($seccion ?? '') === 'reportes_generales' ? 'active' : '' ?>">
                     <i class="bi bi-graph-up"></i> Reportes Generales
                 </a>
             </li>
+            <?php endif; ?>
         </ul>
     </nav>
 

@@ -8,6 +8,7 @@ class BitacoraController extends Controller
 {
     public function index(): void
     {
+        if (!$this->verificarPermisoVista('bitacora')) return;
         $this->render('bitacora/bitacora', [
             'titulo' => 'Bitácora de Auditoría',
             'seccion' => 'bitacora',
@@ -17,6 +18,7 @@ class BitacoraController extends Controller
 
     public function listar(): void
     {
+        if (!$this->verificarPermiso('bitacora')) return;
         // TODO: Obtener registros de bitácora
         $this->json(['data' => []]);
     }

@@ -8,6 +8,7 @@ class ReporteGeneralController extends Controller
 {
     public function index(): void
     {
+        if (!$this->verificarPermisoVista('reportes_generales')) return;
         $this->render('reportes_generales/reportes_generales', [
             'titulo' => 'Reportes Generales',
             'seccion' => 'reportes_generales',
@@ -17,6 +18,7 @@ class ReporteGeneralController extends Controller
 
     public function generar(): void
     {
+        if (!$this->verificarPermiso('reportes_generales')) return;
         // TODO: Generar reporte general según filtros
         $this->json(['ok' => true, 'data' => []]);
     }

@@ -11,6 +11,7 @@ class UsuarioController extends Controller
 {
     public function index(): void
     {
+        if (!$this->verificarPermisoVista('usuarios')) return;
         $this->render('usuarios/usuarios', [
             'titulo' => 'Gestión de Usuarios',
             'seccion' => 'usuarios',
@@ -22,6 +23,7 @@ class UsuarioController extends Controller
 
     public function listar(): void
     {
+        if (!$this->verificarPermiso('usuarios')) return;
         $usuario = new Usuario();
         $cedulaLogeado = AuthMiddleware::cedula();
         $usuarios = $usuario->obtenerTodos($cedulaLogeado);
@@ -30,6 +32,7 @@ class UsuarioController extends Controller
 
     public function obtener(): void
     {
+        if (!$this->verificarPermiso('usuarios')) return;
         $cedula = $_POST['cedula'] ?? 0;
         if (empty($cedula)) {
             $this->json(['ok' => false, 'mensaje' => 'Cédula requerida.'], 400);
@@ -43,6 +46,7 @@ class UsuarioController extends Controller
 
     public function guardar(): void
     {
+        if (!$this->verificarPermiso('usuarios')) return;
         $id = $_POST['id'] ?? '';
         $cedula = $_POST['cedula'] ?? '';
         $nombre = mb_convert_case($_POST['nombre'] ?? '', MB_CASE_TITLE, 'UTF-8');
@@ -122,6 +126,7 @@ class UsuarioController extends Controller
 
     public function eliminar(): void
     {
+        if (!$this->verificarPermiso('usuarios')) return;
         $cedula = $_POST['cedula'] ?? 0;
         if (empty($cedula)) {
             $this->json(['ok' => false, 'mensaje' => 'Cédula requerida.'], 400);
@@ -135,6 +140,7 @@ class UsuarioController extends Controller
 
     public function verificarCedula(): void
     {
+        if (!$this->verificarPermiso('usuarios')) return;
         $cedula = $_POST['cedula'] ?? 0;
         if (empty($cedula)) {
             $this->json(['ok' => false, 'mensaje' => 'Cédula requerida.'], 400);
@@ -150,6 +156,7 @@ class UsuarioController extends Controller
 
     public function listarRoles(): void
     {
+        if (!$this->verificarPermiso('usuarios')) return;
         $rol = new Rol();
         $roles = $rol->obtenerTodos();
         $this->json(['data' => $roles ?: []]);
@@ -157,6 +164,7 @@ class UsuarioController extends Controller
 
     public function guardarRol(): void
     {
+        if (!$this->verificarPermiso('usuarios')) return;
         $id = $_POST['idRol'] ?? '';
         $nombreRol = mb_convert_case($_POST['nombreRol'] ?? '', MB_CASE_TITLE, 'UTF-8');
 
@@ -187,6 +195,7 @@ class UsuarioController extends Controller
 
     public function eliminarRol(): void
     {
+        if (!$this->verificarPermiso('usuarios')) return;
         $idRol = $_POST['idRol'] ?? 0;
         if (empty($idRol)) {
             $this->json(['ok' => false, 'mensaje' => 'ID de rol requerido.'], 400);
@@ -204,6 +213,7 @@ class UsuarioController extends Controller
 
     public function verificarUsoRol(): void
     {
+        if (!$this->verificarPermiso('usuarios')) return;
         $idRol = $_POST['idRol'] ?? 0;
         if (empty($idRol)) {
             $this->json(['ok' => false, 'mensaje' => 'ID de rol requerido.'], 400);
