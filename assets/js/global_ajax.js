@@ -116,7 +116,7 @@ const Ajax = (function () {
                     // Refresh fallo, el request original se descarta
                 });
             }
-        } else if (xhr.status === 403) {
+        } else if (xhr.status === 403 && !settings.url.includes('/auth/login')) {
             Swal.fire({ icon: 'warning', title: 'Acceso denegado', text: 'No tienes permisos para realizar esta accion.' });
         } else if (xhr.status === 500) {
             Swal.fire({ icon: 'error', title: 'Error', text: 'Error interno del servidor.' });

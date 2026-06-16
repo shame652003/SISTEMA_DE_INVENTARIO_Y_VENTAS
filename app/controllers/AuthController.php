@@ -23,13 +23,18 @@ class AuthController extends Controller
         $usuarioModel = new Usuario();
         $usuario = $usuarioModel->obtenerPorCedula((int) $cedula);
 
-        if (!$usuario || !password_verify($password, $usuario['clave'])) {
+        if (!$usuario) {
             $this->json(['ok' => false, 'mensaje' => 'Credenciales inválidas.'], 401);
             return;
         }
 
         if ((int) $usuario['status'] !== 1) {
-            $this->json(['ok' => false, 'mensaje' => 'Usuario inactivo. Contacte al administrador.'], 403);
+            $this->json(['ok' => false, 'mensaje' => 'Usuario inactivo. Su cuenta ha sido desactivada. Contacte al administrador.'], 403);
+            return;
+        }
+
+        if (!password_verify($password, $usuario['clave'])) {
+            $this->json(['ok' => false, 'mensaje' => 'Credenciales inválidas.'], 401);
             return;
         }
 
@@ -57,13 +62,14 @@ class AuthController extends Controller
         $this->json([
             'ok'            => true,
             'refresh_token' => $refreshToken,   // solo refresh token a JS
-            'usuario'       => [
-                'cedula'    => $usuario['cedula'],
-                'nombre'    => trim($usuario['nombre'] . ' ' . ($usuario['apellido'] ?? '')),
-                'correo'    => $usuario['correo'],
-                'idRol'     => $usuario['idRol'],
-                'nombreRol' => $usuario['nombreRol'] ?? '',
-            ],
+                'usuario'       => [
+                    'cedula'    => $usuario['cedula'],
+                    'nombre'    => trim($usuario['nombre'] . ' ' . ($usuario['apellido'] ?? '')),
+                    'correo'    => $usuario['correo'],
+                    'idRol'     => $usuario['idRol'],
+                    'nombreRol' => $usuario['nombreRol'] ?? '',
+                    'img'       => $usuario['img'] ?? '',
+                ],
         ]);
     }
 

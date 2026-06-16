@@ -3,6 +3,7 @@
 namespace App\Core;
 
 use App\Core\AuthMiddleware;
+use App\Core\Permisos;
 
 class Controller
 {
@@ -38,6 +39,26 @@ class Controller
     protected function auth(): ?array
     {
         return AuthMiddleware::usuario();
+    }
+
+    protected function verificarPermiso(string $modulo): bool
+    {
+        if (!Permisos::puede($modulo)) {
+            $this->json(['ok' => false, 'mensaje' => 'No tienes permisos para acceder a este módulo.'], 403);
+            return false;
+        }
+        return true;
+    }
+
+    protected function verificarPermisoVista(string $modulo): bool
+    {
+        if (!Permisos::puede($modulo)) {
+            $baseUrl = defined('BASE_URL') ? BASE_URL : '';
+            $dashboardUrl = $baseUrl . \App\Core\UrlCipher::encrypt('/dashboard');
+            header("Location: $dashboardUrl");
+            exit;
+        }
+        return true;
     }
 
     protected function json(array $data, int $code = 200): void

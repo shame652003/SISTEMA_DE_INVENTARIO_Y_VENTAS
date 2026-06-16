@@ -11,10 +11,18 @@ $rutasMap = [
     'dashboard'         => '/dashboard',
     'usuarios'          => '/usuarios',
     'usuarios_listar'   => '/usuarios/listar',
+    'usuarios_obtener'  => '/usuarios/obtener',
     'usuarios_guardar'  => '/usuarios/guardar',
     'usuarios_eliminar' => '/usuarios/eliminar',
+    'usuarios_verificar_cedula' => '/usuarios/verificar-cedula',
+    'usuarios_roles_listar'   => '/usuarios/roles/listar',
+    'usuarios_roles_guardar'  => '/usuarios/roles/guardar',
+    'usuarios_roles_eliminar' => '/usuarios/roles/eliminar',
+    'usuarios_roles_verificar_uso' => '/usuarios/roles/verificar-uso',
     'perfil'            => '/perfil',
+    'perfil_obtener'    => '/perfil/obtener',
     'perfil_actualizar' => '/perfil/actualizar',
+    'perfil_cambiar_clave' => '/perfil/cambiar-clave',
     'bitacora'          => '/bitacora',
     'bitacora_listar'   => '/bitacora/listar',
     'ayuda'             => '/ayuda',
@@ -35,6 +43,8 @@ $rutasMap = [
     'ventas'            => '/ventas',
     'ventas_listar'     => '/ventas/listar',
     'ventas_guardar'    => '/ventas/guardar',
+    'stock'             => '/stock',
+    'stock_listar'      => '/stock/listar',
     'reportes_pagos'       => '/reportes/pagos',
     'reportes_pagos_generar' => '/reportes/pagos/generar',
     'reportes_generales'       => '/reportes/generales',
@@ -60,6 +70,12 @@ foreach ($rutasMap as $k => $r) {
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
 
     <!-- Configuración global JS -->
     <script>

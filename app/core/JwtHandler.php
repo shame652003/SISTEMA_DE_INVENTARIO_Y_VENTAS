@@ -30,11 +30,12 @@ class JwtHandler
             'exp'    => $ahora + $config['access_ttl'],
             'sub'    => $usuario['cedula'],
             'data'   => [
-                'cedula'   => $usuario['cedula'],
-                'nombre'   => ($usuario['nombre'] ?? '') . ' ' . ($usuario['apellido'] ?? ''),
-                'correo'   => $usuario['correo'] ?? '',
-                'idRol'    => $usuario['idRol'] ?? 0,
-                'nombreRol'=> $usuario['nombreRol'] ?? '',
+                'cedula'    => $usuario['cedula'],
+                'nombre'    => ($usuario['nombre'] ?? '') . ' ' . ($usuario['apellido'] ?? ''),
+                'correo'    => $usuario['correo'] ?? '',
+                'idRol'     => $usuario['idRol'] ?? 0,
+                'nombreRol' => $usuario['nombreRol'] ?? '',
+                'img'       => $usuario['img'] ?? '',
             ],
         ];
 

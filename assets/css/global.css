@@ -397,6 +397,19 @@ body {
     transform: translateY(0);
 }
 
+.btn-header-action.btn-outline-orange {
+    background: transparent;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    box-shadow: none;
+}
+
+.btn-header-action.btn-outline-orange:hover {
+    background: var(--primary-color);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
+}
+
 /* ─── Action Buttons (Dashboard) ─── */
 .btn-action {
     background: #fff;
@@ -451,6 +464,111 @@ body {
     border-color: rgba(0,0,0,0.04);
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
+}
+
+/* ─── Modern Inputs ─── */
+.modern-input .input-group-text {
+    border-radius: 0.75rem 0 0 0.75rem;
+    border-color: #e2e8f0;
+    padding-left: 1rem;
+    padding-right: 0.75rem;
+    color: #94a3b8;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.modern-input .form-control,
+.modern-input .form-select {
+    border-radius: 0 0.75rem 0.75rem 0;
+    border-color: #e2e8f0;
+    padding: 0.65rem 1rem;
+    font-size: 0.95rem;
+    color: #334155;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.modern-input .form-control:focus,
+.modern-input .form-select:focus {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.1);
+}
+
+.modern-input .form-control:focus + .input-group-text,
+.modern-input .form-control:focus ~ .input-group-text,
+.modern-input .form-select:focus + .input-group-text,
+.modern-input .form-select:focus ~ .input-group-text {
+    border-color: #93c5fd;
+    color: #2563eb;
+}
+
+/* ─── DataTables Custom ─── */
+.dataTables_wrapper .dataTables_filter input {
+    border-radius: 0.6rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+.dataTables_wrapper .dataTables_filter input:focus {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.1);
+    outline: none;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    border-radius: 0.6rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.35rem 2rem 0.35rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+table.dataTable thead th {
+    border-bottom: 2px solid #e2e8f0 !important;
+    font-weight: 600;
+    color: #64748b;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+table.dataTable tbody td {
+    vertical-align: middle;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    color: #334155;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border-radius: 0.5rem !important;
+    border: none !important;
+    padding: 0.4rem 0.8rem !important;
+    margin: 0 0.15rem !important;
+    font-size: 0.85rem;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-color)) !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #f1f5f9 !important;
+    color: #334155 !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-color)) !important;
+    color: #fff !important;
+}
+
+/* ─── Preview Imagen ─── */
+.img-preview-rounded {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 /* ─── Responsive ─── */

@@ -23,18 +23,22 @@ class Usuario extends Model
         return $this->fetch(
             "SELECT u.*, r.nombreRol FROM {$this->table} u
              INNER JOIN rol r ON r.idRol = u.idRol
-             WHERE u.cedula = ? AND u.status = 1",
+             WHERE u.cedula = ?",
             [$cedula]
         );
     }
 
-    public function obtenerTodos(): array
+    public function obtenerTodos(?int $excluirCedula = null): array
     {
-        return $this->fetchAll(
-            "SELECT u.*, r.nombreRol FROM {$this->table} u
-             INNER JOIN rol r ON r.idRol = u.idRol
-             ORDER BY u.cedula DESC"
-        );
+        $sql = "SELECT u.*, r.nombreRol FROM {$this->table} u
+             INNER JOIN rol r ON r.idRol = u.idRol";
+        $params = [];
+        if ($excluirCedula !== null) {
+            $sql .= " WHERE u.cedula != ?";
+            $params[] = $excluirCedula;
+        }
+        $sql .= " ORDER BY u.cedula DESC";
+        return $this->fetchAll($sql, $params);
     }
 
     public function crear(array $datos): bool
@@ -53,5 +57,27 @@ class Usuario extends Model
     public function eliminar(int $cedula): bool
     {
         return $this->execute("UPDATE {$this->table} SET status = 0 WHERE cedula = ?", [$cedula]);
+    }
+
+    public function existeCedula(int $cedula, ?int $excluirCedula = null): bool
+    {
+        $sql = "SELECT COUNT(*) FROM {$this->table} WHERE cedula = ?";
+        $params = [$cedula];
+        if ($excluirCedula !== null) {
+            $sql .= " AND cedula != ?";
+            $params[] = $excluirCedula;
+        }
+        return $this->query($sql, $params)->fetchColumn() > 0;
+    }
+
+    public function existeCorreo(string $correo, ?int $excluirCedula = null): bool
+    {
+        $sql = "SELECT COUNT(*) FROM {$this->table} WHERE correo = ?";
+        $params = [$correo];
+        if ($excluirCedula !== null) {
+            $sql .= " AND cedula != ?";
+            $params[] = $excluirCedula;
+        }
+        return $this->query($sql, $params)->fetchColumn() > 0;
     }
 }
