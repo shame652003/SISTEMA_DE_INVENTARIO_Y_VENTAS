@@ -57,9 +57,37 @@ $(function () {
         $(this).siblings('.invalid-feedback').remove();
     });
 
+    // ─── Validaciones específicas por campo ───
+
+    // Cédula: formato + unicidad en tiempo real (solo nuevo usuario)
+    var cedulaDebounce = null;
+    $('#usuario-cedula').on('blur', function () {
+        var $this = $(this);
+        Validaciones.cedula('#usuario-cedula', 'Cédula');
+        if (!$this.prop('readonly')) {
+            if (cedulaDebounce) clearTimeout(cedulaDebounce);
+            cedulaDebounce = setTimeout(function () {
+                Validaciones.cedulaUnica('#usuario-cedula', window.ROUTES.usuarios_verificar_cedula, 'Cédula');
+            }, 300);
+        }
+    });
+
+    // Nombres y apellidos: solo letras + capitalización
+    $('#usuario-nombre, #usuario-segNombre, #usuario-apellido, #usuario-segApellido').on('blur', function () {
+        Validaciones.soloLetras(this, $(this).attr('placeholder') || 'Este campo');
+        Validaciones.formatearCapitalizacion(this);
+    });
+
+    // Nombre del rol: solo letras + capitalización
+    $('#rol-nombre').on('blur', function () {
+        Validaciones.soloLetras(this, 'Nombre del rol');
+        Validaciones.formatearCapitalizacion(this);
+    });
+
     // Limpiar errores al abrir modal
     $('#modal-usuario').on('shown.bs.modal', function () {
         Validaciones.limpiarErrores('#form-usuario');
+        cedulaDebounce = null;
     });
 
     $('#modal-rol').on('shown.bs.modal', function () {
@@ -307,32 +335,59 @@ $(function () {
     });
 
     $(document).on('click', '.btn-editar-rol', function () {
-        $('#rol-id').val($(this).data('id'));
-        $('#rol-nombre').val($(this).data('nombre'));
-        $('#titulo-modal-rol').html('<i class="bi bi-pencil me-2 text-warning"></i>Editar Rol');
-        modalRol.show();
+        const idRol = $(this).data('id');
+        const nombre = $(this).data('nombre');
+
+        Ajax.post(window.ROUTES.usuarios_roles_verificar_uso, { idRol: idRol })
+            .done(function (res) {
+                if (res.ok && res.enUso) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Rol en uso',
+                        text: `El rol "${nombre}" está asignado a ${res.count} usuario(s) activo(s) y no puede ser editado.`
+                    });
+                    return;
+                }
+                $('#rol-id').val(idRol);
+                $('#rol-nombre').val(nombre);
+                $('#titulo-modal-rol').html('<i class="bi bi-pencil me-2 text-warning"></i>Editar Rol');
+                modalRol.show();
+            });
     });
 
     $(document).on('click', '.btn-eliminar-rol', function () {
         const idRol = $(this).data('id');
         const nombre = $(this).data('nombre');
-        Swal.fire({
-            icon: 'warning',
-            title: '¿Eliminar rol?',
-            text: `¿Estás seguro de eliminar el rol "${nombre}"?`,
-            showCancelButton: true,
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#dc3545'
-        }).then(function (result) {
-            if (result.isConfirmed) {
-                Ajax.post(window.ROUTES.usuarios_roles_eliminar, { idRol: idRol })
-                    .done(function (res) {
-                        Swal.fire({ icon: 'success', title: 'Éxito', text: res.mensaje, timer: 1500, showConfirmButton: false });
-                        cargarRoles();
+
+        Ajax.post(window.ROUTES.usuarios_roles_verificar_uso, { idRol: idRol })
+            .done(function (res) {
+                if (res.ok && res.enUso) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Rol en uso',
+                        text: `El rol "${nombre}" está asignado a ${res.count} usuario(s) activo(s) y no puede ser eliminado.`
                     });
-            }
-        });
+                    return;
+                }
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: '¿Eliminar rol?',
+                    text: `¿Estás seguro de eliminar el rol "${nombre}"?`,
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#dc3545'
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        Ajax.post(window.ROUTES.usuarios_roles_eliminar, { idRol: idRol })
+                            .done(function (res) {
+                                Swal.fire({ icon: 'success', title: 'Éxito', text: res.mensaje, timer: 1500, showConfirmButton: false });
+                                cargarRoles();
+                            });
+                    }
+                });
+            });
     });
 
     $('#form-rol').on('submit', function (e) {

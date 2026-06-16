@@ -120,6 +120,57 @@ const Validaciones = {
     },
 
     /**
+     * Formatea el valor de un input a Capitalización (Title Case)
+     * aDmiNIstrador -> Administrador, juan carlos -> Juan Carlos
+     */
+    formatearCapitalizacion: function (selector) {
+        const $input = $(selector);
+        const valor = $input.val().trim();
+        if (!valor) return;
+        const formateado = valor.replace(/\b\w+/g, function (word) {
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        });
+        if (formateado !== valor) {
+            $input.val(formateado);
+        }
+    },
+
+    /**
+     * Verifica vía AJAX si una cédula ya está registrada.
+     * Retorna una Promise que resuelve a true (válido) o false (duplicado).
+     * Muestra/limpia el error inline automáticamente.
+     * @param {string} selector - Selector CSS del input
+     * @param {string} url     - Ruta del endpoint de verificación
+     * @param {string} nombre  - Nombre del campo para el mensaje
+     * @returns {Promise<boolean>}
+     */
+    cedulaUnica: function (selector, url, nombre = 'Cédula') {
+        const $input = $(selector);
+        const valor = $input.val().trim();
+        if (!valor || !/^[0-9]+$/.test(valor)) {
+            return Promise.resolve(true);
+        }
+
+        return new Promise(function (resolve) {
+            Ajax.post(url, { cedula: valor })
+                .done(function (res) {
+                    if (res.ok && res.existe) {
+                        $input.addClass('is-invalid');
+                        Validaciones._mostrarError(selector, `${nombre} "${valor}" ya está registrada.`);
+                        resolve(false);
+                    } else {
+                        $input.removeClass('is-invalid');
+                        $input.siblings('.invalid-feedback').remove();
+                        resolve(true);
+                    }
+                })
+                .fail(function () {
+                    resolve(true);
+                });
+        });
+    },
+
+    /**
      * Valida todos los campos requeridos de un formulario
      */
     validarFormulario: function (formSelector) {

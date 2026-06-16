@@ -42,9 +42,11 @@ $router->post('/usuarios/listar',   'UsuarioController', 'listar',  'auth');
 $router->post('/usuarios/obtener',  'UsuarioController', 'obtener', 'auth');
 $router->post('/usuarios/guardar',      'UsuarioController', 'guardar',      'auth');
 $router->post('/usuarios/eliminar',     'UsuarioController', 'eliminar',     'auth');
+$router->post('/usuarios/verificar-cedula', 'UsuarioController', 'verificarCedula', 'auth');
 $router->post('/usuarios/roles/listar',  'UsuarioController', 'listarRoles',  'auth');
 $router->post('/usuarios/roles/guardar', 'UsuarioController', 'guardarRol',   'auth');
 $router->post('/usuarios/roles/eliminar','UsuarioController', 'eliminarRol',  'auth');
+$router->post('/usuarios/roles/verificar-uso', 'UsuarioController', 'verificarUsoRol', 'auth');
 
 // Perfil
 $router->get('/perfil',                  'PerfilController', 'index',        'auth');

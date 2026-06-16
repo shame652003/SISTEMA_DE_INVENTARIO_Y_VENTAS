@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\AuthMiddleware;
 use App\Models\Usuario;
 use App\Models\Rol;
 
@@ -22,7 +23,8 @@ class UsuarioController extends Controller
     public function listar(): void
     {
         $usuario = new Usuario();
-        $usuarios = $usuario->obtenerTodos();
+        $cedulaLogeado = AuthMiddleware::cedula();
+        $usuarios = $usuario->obtenerTodos($cedulaLogeado);
         $this->json(['data' => $usuarios ?: []]);
     }
 
@@ -43,11 +45,11 @@ class UsuarioController extends Controller
     {
         $id = $_POST['id'] ?? '';
         $cedula = $_POST['cedula'] ?? '';
-        $nombre = $_POST['nombre'] ?? '';
-        $segNombre = $_POST['segNombre'] ?? '';
-        $apellido = $_POST['apellido'] ?? '';
-        $segApellido = $_POST['segApellido'] ?? '';
-        $correo = $_POST['correo'] ?? '';
+        $nombre = mb_convert_case($_POST['nombre'] ?? '', MB_CASE_TITLE, 'UTF-8');
+        $segNombre = mb_convert_case($_POST['segNombre'] ?? '', MB_CASE_TITLE, 'UTF-8');
+        $apellido = mb_convert_case($_POST['apellido'] ?? '', MB_CASE_TITLE, 'UTF-8');
+        $segApellido = mb_convert_case($_POST['segApellido'] ?? '', MB_CASE_TITLE, 'UTF-8');
+        $correo = strtolower(trim($_POST['correo'] ?? ''));
         $telefono = $_POST['telefono'] ?? '';
         $idRol = $_POST['idRol'] ?? 0;
         $status = $_POST['status'] ?? 1;
@@ -58,6 +60,22 @@ class UsuarioController extends Controller
         }
 
         $usuario = new Usuario();
+
+        if (empty($id)) {
+            if ($usuario->existeCedula((int) $cedula)) {
+                $this->json(['ok' => false, 'mensaje' => "La cédula $cedula ya está registrada."], 409);
+                return;
+            }
+            if ($usuario->existeCorreo($correo)) {
+                $this->json(['ok' => false, 'mensaje' => "El correo $correo ya está registrado."], 409);
+                return;
+            }
+        } else {
+            if ($usuario->existeCorreo($correo, (int) $id)) {
+                $this->json(['ok' => false, 'mensaje' => "El correo $correo ya está registrado por otro usuario."], 409);
+                return;
+            }
+        }
         $datos = [
             'cedula' => $cedula,
             'nombre' => $nombre,
@@ -115,6 +133,19 @@ class UsuarioController extends Controller
         $this->json(['ok' => $ok, 'mensaje' => $ok ? 'Usuario eliminado correctamente.' : 'Error al eliminar usuario.']);
     }
 
+    public function verificarCedula(): void
+    {
+        $cedula = $_POST['cedula'] ?? 0;
+        if (empty($cedula)) {
+            $this->json(['ok' => false, 'mensaje' => 'Cédula requerida.'], 400);
+            return;
+        }
+
+        $usuario = new Usuario();
+        $existe = $usuario->existeCedula((int) $cedula);
+        $this->json(['ok' => true, 'existe' => $existe]);
+    }
+
     // ─── ROLES ───
 
     public function listarRoles(): void
@@ -127,7 +158,7 @@ class UsuarioController extends Controller
     public function guardarRol(): void
     {
         $id = $_POST['idRol'] ?? '';
-        $nombreRol = $_POST['nombreRol'] ?? '';
+        $nombreRol = mb_convert_case($_POST['nombreRol'] ?? '', MB_CASE_TITLE, 'UTF-8');
 
         if (empty($nombreRol)) {
             $this->json(['ok' => false, 'mensaje' => 'El nombre del rol es obligatorio.'], 400);
@@ -136,9 +167,17 @@ class UsuarioController extends Controller
 
         $rol = new Rol();
         if (!empty($id)) {
+            if ($rol->existeNombre($nombreRol, (int) $id)) {
+                $this->json(['ok' => false, 'mensaje' => "El rol \"$nombreRol\" ya existe."], 409);
+                return;
+            }
             $ok = $rol->actualizar((int) $id, ['nombreRol' => $nombreRol]);
             $mensaje = $ok ? 'Rol actualizado correctamente.' : 'Error al actualizar rol.';
         } else {
+            if ($rol->existeNombre($nombreRol)) {
+                $this->json(['ok' => false, 'mensaje' => "El rol \"$nombreRol\" ya existe."], 409);
+                return;
+            }
             $ok = $rol->crear(['nombreRol' => $nombreRol]);
             $mensaje = $ok ? 'Rol creado correctamente.' : 'Error al crear rol.';
         }
@@ -155,7 +194,24 @@ class UsuarioController extends Controller
         }
 
         $rol = new Rol();
+        if ($rol->tieneUsuariosActivos((int) $idRol)) {
+            $this->json(['ok' => false, 'mensaje' => 'No se puede eliminar el rol porque está asignado a usuarios activos.'], 409);
+            return;
+        }
         $ok = $rol->eliminar((int) $idRol);
         $this->json(['ok' => $ok, 'mensaje' => $ok ? 'Rol eliminado correctamente.' : 'Error al eliminar rol.']);
+    }
+
+    public function verificarUsoRol(): void
+    {
+        $idRol = $_POST['idRol'] ?? 0;
+        if (empty($idRol)) {
+            $this->json(['ok' => false, 'mensaje' => 'ID de rol requerido.'], 400);
+            return;
+        }
+
+        $rol = new Rol();
+        $count = $rol->contarUsuariosActivos((int) $idRol);
+        $this->json(['ok' => true, 'enUso' => $count > 0, 'count' => $count]);
     }
 }

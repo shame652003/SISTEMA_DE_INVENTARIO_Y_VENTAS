@@ -49,7 +49,14 @@ class Model
 
     protected function execute(string $sql, array $params = []): bool
     {
-        return $this->query($sql, $params)->rowCount() > 0;
+        try {
+            return $this->query($sql, $params)->rowCount() > 0;
+        } catch (PDOException $e) {
+            if ($e->getCode() == 23000) {
+                return false;
+            }
+            throw $e;
+        }
     }
 
     protected function lastInsertId(): string

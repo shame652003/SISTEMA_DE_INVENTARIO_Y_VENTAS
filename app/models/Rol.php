@@ -46,4 +46,31 @@ class Rol extends Model
             [$idRol]
         );
     }
+
+    public function existeNombre(string $nombreRol, ?int $excluirId = null): bool
+    {
+        $sql = "SELECT COUNT(*) FROM {$this->table} WHERE nombreRol = ? AND status = 1";
+        $params = [$nombreRol];
+        if ($excluirId !== null) {
+            $sql .= " AND idRol != ?";
+            $params[] = $excluirId;
+        }
+        return $this->query($sql, $params)->fetchColumn() > 0;
+    }
+
+    public function tieneUsuariosActivos(int $idRol): bool
+    {
+        return $this->query(
+            "SELECT COUNT(*) FROM usuario WHERE idRol = ? AND status = 1",
+            [$idRol]
+        )->fetchColumn() > 0;
+    }
+
+    public function contarUsuariosActivos(int $idRol): int
+    {
+        return (int) $this->query(
+            "SELECT COUNT(*) FROM usuario WHERE idRol = ? AND status = 1",
+            [$idRol]
+        )->fetchColumn();
+    }
 }
