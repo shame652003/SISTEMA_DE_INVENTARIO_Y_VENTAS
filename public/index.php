@@ -91,9 +91,11 @@ $router->post('/entradas/producto/info',     'EntradaController', 'productoInfo'
 $router->post('/entradas/config/precios',    'EntradaController', 'configPrecios',   'auth');
 
 // Salidas
-$router->get('/salidas',          'SalidaController', 'index',  'auth');
-$router->post('/salidas/listar',  'SalidaController', 'listar', 'auth');
-$router->post('/salidas/guardar', 'SalidaController', 'guardar','auth');
+$router->get('/salidas',                    'SalidaController', 'index',           'auth');
+$router->post('/salidas/listar',            'SalidaController', 'listar',          'auth');
+$router->post('/salidas/guardar',           'SalidaController', 'guardar',         'auth');
+$router->post('/salidas/productos/buscar',  'SalidaController', 'buscarProductos', 'auth');
+$router->post('/salidas/producto/info',     'SalidaController', 'productoInfo',    'auth');
 
 // Ventas
 $router->get('/ventas',          'VentaController', 'index',  'auth');
@@ -101,8 +103,10 @@ $router->post('/ventas/listar',  'VentaController', 'listar', 'auth');
 $router->post('/ventas/guardar', 'VentaController', 'guardar','auth');
 
 // Stock
-$router->get('/stock',         'StockController', 'index',  'auth');
-$router->post('/stock/listar', 'StockController', 'listar', 'auth');
+$router->get('/stock',                    'StockController', 'index',           'auth');
+$router->post('/stock/listar',            'StockController', 'listar',          'auth');
+$router->post('/stock/productos/buscar',  'StockController', 'buscarProductos', 'auth');
+$router->post('/stock/producto/info',     'StockController', 'productoInfo',    'auth');
 
 // Reportes
 $router->get('/reportes/pagos',            'ReportePagoController', 'index',   'auth');
