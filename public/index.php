@@ -74,8 +74,12 @@ $router->post('/clientes/verificar-ventas', 'ClienteController', 'verificarVenta
 // Productos
 $router->get('/productos',           'ProductoController', 'index',   'auth');
 $router->post('/productos/listar',   'ProductoController', 'listar',  'auth');
-$router->post('/productos/guardar',  'ProductoController', 'guardar', 'auth');
-$router->post('/productos/eliminar', 'ProductoController', 'eliminar','auth');
+$router->post('/productos/obtener',         'ProductoController', 'obtener',        'auth');
+$router->post('/productos/guardar',          'ProductoController', 'guardar',        'auth');
+$router->post('/productos/eliminar',         'ProductoController', 'eliminar',       'auth');
+$router->post('/productos/tipos/listar',     'ProductoController', 'listarTipos',    'auth');
+$router->post('/productos/tipos/guardar',    'ProductoController', 'guardarTipo',    'auth');
+$router->post('/productos/tipos/eliminar',   'ProductoController', 'eliminarTipo',   'auth');
 
 // Entradas
 $router->get('/entradas',          'EntradaController', 'index',  'auth');

@@ -58,4 +58,47 @@ class Producto extends Model
     {
         return $this->fetchAll("SELECT * FROM tipo_productos WHERE status = 1 ORDER BY tipo");
     }
+
+    public function existeCodigo(string $codigo, ?int $excluirId = null): bool
+    {
+        $sql = "SELECT COUNT(*) AS total FROM {$this->table} WHERE codigo = ? AND status = 1";
+        $params = [$codigo];
+        if ($excluirId !== null) {
+            $sql .= " AND idproducto != ?";
+            $params[] = $excluirId;
+        }
+        $res = $this->fetch($sql, $params);
+        return ($res['total'] ?? 0) > 0;
+    }
+
+    /* ===== CRUD tipo_productos ===== */
+
+    public function crearTipo(array $datos): bool
+    {
+        $campos = implode(', ', array_keys($datos));
+        $placeholders = implode(', ', array_fill(0, count($datos), '?'));
+        return $this->execute("INSERT INTO tipo_productos ($campos) VALUES ($placeholders)", array_values($datos));
+    }
+
+    public function actualizarTipo(int $id, array $datos): bool
+    {
+        $sets = implode(', ', array_map(fn($c) => "$c = ?", array_keys($datos)));
+        return $this->execute("UPDATE tipo_productos SET $sets WHERE idTipoA = ?", [...array_values($datos), $id]);
+    }
+
+    public function eliminarTipo(int $id): bool
+    {
+        return $this->execute("UPDATE tipo_productos SET status = 0 WHERE idTipoA = ?", [$id]);
+    }
+
+    public function obtenerTipoPorId(int $id): ?array
+    {
+        return $this->fetch("SELECT * FROM tipo_productos WHERE idTipoA = ? AND status = 1", [$id]);
+    }
+
+    public function tipoEnUso(int $idTipoA): bool
+    {
+        $res = $this->fetch("SELECT COUNT(*) AS total FROM {$this->table} WHERE idTipoA = ? AND status = 1", [$idTipoA]);
+        return ($res['total'] ?? 0) > 0;
+    }
 }
