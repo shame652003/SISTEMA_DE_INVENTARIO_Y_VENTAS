@@ -45,4 +45,23 @@ class Cliente extends Model
     {
         return $this->execute("UPDATE {$this->table} SET status = 0 WHERE cedula = ?", [$cedula]);
     }
+
+    public function existeCedula(int $cedula, ?int $excluirCedula = null): bool
+    {
+        $sql = "SELECT COUNT(*) FROM {$this->table} WHERE cedula = ?";
+        $params = [$cedula];
+        if ($excluirCedula !== null) {
+            $sql .= " AND cedula != ?";
+            $params[] = $excluirCedula;
+        }
+        return $this->query($sql, $params)->fetchColumn() > 0;
+    }
+
+    public function contarVentas(int $cedula): int
+    {
+        return (int) $this->query(
+            "SELECT COUNT(*) FROM ventas_encabezado WHERE cedula_cliente = ? AND status = 1",
+            [$cedula]
+        )->fetchColumn();
+    }
 }

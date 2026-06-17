@@ -62,10 +62,14 @@ $router->post('/bitacora/listar',  'BitacoraController', 'listar', 'auth');
 $router->get('/ayuda', 'AyudaController', 'index', 'auth');
 
 // Clientes
-$router->get('/clientes',           'ClienteController', 'index',   'auth');
-$router->post('/clientes/listar',   'ClienteController', 'listar',  'auth');
-$router->post('/clientes/guardar',  'ClienteController', 'guardar', 'auth');
-$router->post('/clientes/eliminar', 'ClienteController', 'eliminar','auth');
+$router->get('/clientes',                'ClienteController', 'index',          'auth');
+$router->post('/clientes/listar',       'ClienteController', 'listar',         'auth');
+$router->post('/clientes/obtener',      'ClienteController', 'obtener',        'auth');
+$router->post('/clientes/guardar',      'ClienteController', 'guardar',        'auth');
+$router->post('/clientes/eliminar',     'ClienteController', 'eliminar',       'auth');
+$router->post('/clientes/verificar-cedula', 'ClienteController', 'verificarCedula', 'auth');
+$router->post('/clientes/equipos/listar',   'ClienteController', 'listarEquipos',   'auth');
+$router->post('/clientes/verificar-ventas', 'ClienteController', 'verificarVentas', 'auth');
 
 // Productos
 $router->get('/productos',           'ProductoController', 'index',   'auth');

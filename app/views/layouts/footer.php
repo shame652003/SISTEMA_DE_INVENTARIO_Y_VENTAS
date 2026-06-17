@@ -28,8 +28,12 @@ $rutasMap = [
     'ayuda'             => '/ayuda',
     'clientes'          => '/clientes',
     'clientes_listar'   => '/clientes/listar',
+    'clientes_obtener'  => '/clientes/obtener',
     'clientes_guardar'  => '/clientes/guardar',
     'clientes_eliminar' => '/clientes/eliminar',
+    'clientes_verificar_cedula' => '/clientes/verificar-cedula',
+    'clientes_equipos_listar'   => '/clientes/equipos/listar',
+    'clientes_verificar_ventas' => '/clientes/verificar-ventas',
     'productos'          => '/productos',
     'productos_listar'   => '/productos/listar',
     'productos_guardar'  => '/productos/guardar',
@@ -70,6 +74,9 @@ foreach ($rutasMap as $k => $r) {
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
 
     <!-- DataTables -->
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
