@@ -82,9 +82,13 @@ $router->post('/productos/tipos/guardar',    'ProductoController', 'guardarTipo'
 $router->post('/productos/tipos/eliminar',   'ProductoController', 'eliminarTipo',   'auth');
 
 // Entradas
-$router->get('/entradas',          'EntradaController', 'index',  'auth');
-$router->post('/entradas/listar',  'EntradaController', 'listar', 'auth');
-$router->post('/entradas/guardar', 'EntradaController', 'guardar','auth');
+$router->get('/entradas',                    'EntradaController', 'index',           'auth');
+$router->post('/entradas/listar',            'EntradaController', 'listar',          'auth');
+$router->post('/entradas/guardar',           'EntradaController', 'guardar',         'auth');
+$router->post('/entradas/detalle',              'EntradaController', 'detalle',         'auth');
+$router->post('/entradas/productos/buscar',  'EntradaController', 'buscarProductos', 'auth');
+$router->post('/entradas/producto/info',     'EntradaController', 'productoInfo',    'auth');
+$router->post('/entradas/config/precios',    'EntradaController', 'configPrecios',   'auth');
 
 // Salidas
 $router->get('/salidas',          'SalidaController', 'index',  'auth');
