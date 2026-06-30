@@ -60,6 +60,27 @@ const Ajax = (function () {
         return false;
     }
 
+    async function refrescarTokenSilencioso() {
+        const refreshToken = getRefreshToken();
+        if (!refreshToken) return false;
+
+        try {
+            const res = await $.ajax({
+                url: BASE_URL + window.ROUTES.auth_refresh,
+                type: 'POST',
+                data: { refresh_token: refreshToken },
+                dataType: 'json'
+            });
+
+            if (res.ok) {
+                guardarRefreshToken(res.refresh_token);
+                return true;
+            }
+        } catch (e) {}
+
+        return false;
+    }
+
     // Redirigir a login (usar replace para no acumular historial)
     function irALogin() {
         window.location.replace(BASE_URL + window.NAV.login);
@@ -149,6 +170,7 @@ const Ajax = (function () {
         guardarRefreshToken: guardarRefreshToken,
         limpiarTokens: limpiarTokens,
         refrescarToken: refrescarToken,
+        refrescarTokenSilencioso: refrescarTokenSilencioso,
         BASE_URL: BASE_URL
     };
 })();

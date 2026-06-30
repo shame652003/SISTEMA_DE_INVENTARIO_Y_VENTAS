@@ -12,11 +12,10 @@ class UsuarioController extends Controller
     public function index(): void
     {
         if (!$this->verificarPermisoVista('usuarios')) return;
-        $this->render('usuarios/usuarios', [
+        $this->render('usuarios/usuarios', array_merge([
             'titulo' => 'Gestión de Usuarios',
             'seccion' => 'usuarios',
-            'extraJS' => '<script src="' . BASE_URL . '/assets/js/usuarios.js"></script>',
-        ], 'app');
+        ], $this->datosModulo('usuarios', 'usuarios.js')), 'app');
     }
 
     // ─── USUARIOS ───

@@ -13,11 +13,10 @@ class DashboardController extends Controller
         $reporte = new Reporte();
         $resumen = $reporte->resumenDashboard();
 
-        $this->render('dashboard/dashboard', [
+        $this->render('dashboard/dashboard', array_merge([
             'titulo' => 'Dashboard',
             'seccion' => 'dashboard',
             'resumen' => $resumen ?: [],
-            'extraJS' => '<script src="' . BASE_URL . '/assets/js/dashboard.js"></script>',
-        ], 'app');
+        ], $this->datosModulo('dashboard', 'dashboard.js')), 'app');
     }
 }

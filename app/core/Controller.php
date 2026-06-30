@@ -61,6 +61,37 @@ class Controller
         return true;
     }
 
+    protected function datosModulo(string $modulo, string $jsFile = ''): array
+    {
+        $necesitaSelect2 = in_array($modulo, ['ventas', 'clientes', 'entradas', 'salidas', 'stock']);
+        $necesitaDataTables = in_array($modulo, ['dashboard', 'usuarios', 'clientes', 'productos', 'entradas', 'salidas', 'stock']);
+
+        $data = ['modulo' => $modulo];
+
+        $extraCSS = '';
+        $extraLibsJS = '';
+
+        if ($necesitaSelect2) {
+            $extraCSS .= '<link href="' . BASE_URL . '/assets/lib/select2/css/select2.min.css" rel="stylesheet"/>' . "\n";
+            $extraLibsJS .= '<script src="' . BASE_URL . '/assets/lib/select2/js/select2.min.js"></script>' . "\n";
+        }
+
+        if ($necesitaDataTables) {
+            $extraCSS .= '<link href="' . BASE_URL . '/assets/lib/datatables/css/dataTables.bootstrap5.min.css" rel="stylesheet">' . "\n";
+            $extraCSS .= '<link href="' . BASE_URL . '/assets/lib/datatables/css/responsive.bootstrap5.min.css" rel="stylesheet">' . "\n";
+            $extraLibsJS .= '<script src="' . BASE_URL . '/assets/lib/datatables/js/jquery.dataTables.min.js"></script>' . "\n";
+            $extraLibsJS .= '<script src="' . BASE_URL . '/assets/lib/datatables/js/dataTables.bootstrap5.min.js"></script>' . "\n";
+            $extraLibsJS .= '<script src="' . BASE_URL . '/assets/lib/datatables/js/dataTables.responsive.min.js"></script>' . "\n";
+            $extraLibsJS .= '<script src="' . BASE_URL . '/assets/lib/datatables/js/responsive.bootstrap5.min.js"></script>' . "\n";
+        }
+
+        if ($extraCSS !== '') $data['extraCSS'] = $extraCSS;
+        if ($extraLibsJS !== '') $data['extraLibsJS'] = $extraLibsJS;
+        if ($jsFile !== '') $data['extraJS'] = '<script src="' . BASE_URL . '/assets/js/' . $jsFile . '"></script>';
+
+        return $data;
+    }
+
     protected function json(array $data, int $code = 200): void
     {
         http_response_code($code);

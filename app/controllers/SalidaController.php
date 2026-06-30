@@ -11,12 +11,11 @@ class SalidaController extends Controller
     {
         if (!$this->verificarPermisoVista('salidas')) return;
         $salida = new Salida();
-        $this->render('salidas/salidas', [
+        $this->render('salidas/salidas', array_merge([
             'titulo' => 'Salidas de Productos',
             'seccion' => 'salidas',
             'tipos' => $salida->obtenerTipos(),
-            'extraJS' => '<script src="' . BASE_URL . '/assets/js/salidas.js"></script>',
-        ], 'app');
+        ], $this->datosModulo('salidas', 'salidas.js')), 'app');
     }
 
     public function listar(): void

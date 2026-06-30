@@ -40,10 +40,12 @@ class Router
         $uri = rtrim($uri, '/') ?: '/';
 
         // Desencriptar si es una URL encriptada (prefijo /r/)
+        $isEncrypted = false;
         if (str_starts_with($uri, '/r/')) {
             $decrypted = UrlCipher::decrypt($uri);
             if ($decrypted !== null) {
                 $uri = rtrim($decrypted, '/') ?: '/';
+                $isEncrypted = true;
             }
         }
 
@@ -54,8 +56,21 @@ class Router
             if (preg_match($pattern, $uri, $matches)) {
                 $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
 
-                // Ejecutar middleware si existe
                 $m = $this->middleware[$method][$route] ?? null;
+
+                // Redirigir GET a rutas protegidas si la URL no viene encriptada
+                $esAjax = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest'
+                       || ($_SERVER['HTTP_ACCEPT'] ?? '') === 'application/json'
+                       || ($_SERVER['CONTENT_TYPE'] ?? '') === 'application/json';
+
+                if ($method === 'GET' && $m === 'auth' && !$isEncrypted && !$esAjax) {
+                    $baseUrl = defined('BASE_URL') ? BASE_URL : '';
+                    $encryptedUrl = $baseUrl . UrlCipher::encrypt($route);
+                    header('Location: ' . $encryptedUrl);
+                    exit;
+                }
+
+                // Ejecutar middleware si existe
                 if ($m === 'auth') {
                     AuthMiddleware::verificar();
                 }

@@ -1,71 +1,112 @@
 <?php
 use App\Core\UrlCipher;
 
-$rutasMap = [
-    'auth_login'        => '/auth/login',
-    'auth_refresh'      => '/auth/refresh',
-    'auth_logout'       => '/auth/logout',
-    'auth_me'           => '/auth/me',
-    'login'             => '/login',
-    'recuperar'         => '/recuperar',
-    'dashboard'         => '/dashboard',
-    'usuarios'          => '/usuarios',
-    'usuarios_listar'   => '/usuarios/listar',
-    'usuarios_obtener'  => '/usuarios/obtener',
-    'usuarios_guardar'  => '/usuarios/guardar',
-    'usuarios_eliminar' => '/usuarios/eliminar',
-    'usuarios_verificar_cedula' => '/usuarios/verificar-cedula',
-    'usuarios_roles_listar'   => '/usuarios/roles/listar',
-    'usuarios_roles_guardar'  => '/usuarios/roles/guardar',
-    'usuarios_roles_eliminar' => '/usuarios/roles/eliminar',
-    'usuarios_roles_verificar_uso' => '/usuarios/roles/verificar-uso',
-    'perfil'            => '/perfil',
-    'perfil_obtener'    => '/perfil/obtener',
-    'perfil_actualizar' => '/perfil/actualizar',
-    'perfil_cambiar_clave' => '/perfil/cambiar-clave',
-    'bitacora'          => '/bitacora',
-    'bitacora_listar'   => '/bitacora/listar',
-    'ayuda'             => '/ayuda',
-    'clientes'          => '/clientes',
-    'clientes_listar'   => '/clientes/listar',
-    'clientes_obtener'  => '/clientes/obtener',
-    'clientes_guardar'  => '/clientes/guardar',
-    'clientes_eliminar' => '/clientes/eliminar',
-    'clientes_verificar_cedula' => '/clientes/verificar-cedula',
-    'clientes_equipos_listar'   => '/clientes/equipos/listar',
-    'clientes_verificar_ventas' => '/clientes/verificar-ventas',
-    'productos'          => '/productos',
-    'productos_listar'           => '/productos/listar',
-    'productos_obtener'          => '/productos/obtener',
-    'productos_guardar'          => '/productos/guardar',
-    'productos_eliminar'         => '/productos/eliminar',
-    'productos_tipos_listar'     => '/productos/tipos/listar',
-    'productos_tipos_guardar'    => '/productos/tipos/guardar',
-    'productos_tipos_eliminar'   => '/productos/tipos/eliminar',
-    'entradas'                    => '/entradas',
-    'entradas_listar'             => '/entradas/listar',
-    'entradas_guardar'            => '/entradas/guardar',
-    'entradas_detalle'              => '/entradas/detalle',
-    'entradas_productos_buscar'   => '/entradas/productos/buscar',
-    'entradas_producto_info'      => '/entradas/producto/info',
-    'entradas_config_precios'     => '/entradas/config/precios',
-    'salidas'                    => '/salidas',
-    'salidas_listar'             => '/salidas/listar',
-    'salidas_guardar'            => '/salidas/guardar',
-    'salidas_productos_buscar'   => '/salidas/productos/buscar',
-    'salidas_producto_info'      => '/salidas/producto/info',
-    'ventas'            => '/ventas',
-    'ventas_listar'     => '/ventas/listar',
-    'ventas_guardar'    => '/ventas/guardar',
-    'stock'                    => '/stock',
-    'stock_listar'             => '/stock/listar',
-    'stock_productos_buscar'   => '/stock/productos/buscar',
-    'stock_producto_info'      => '/stock/producto/info',
-    'reportes_pagos'       => '/reportes/pagos',
-    'reportes_pagos_generar' => '/reportes/pagos/generar',
-    'reportes_generales'       => '/reportes/generales',
-    'reportes_generales_generar' => '/reportes/generales/generar',
+$rutasGlobales = [
+    'auth_login'   => '/auth/login',
+    'auth_refresh' => '/auth/refresh',
+    'auth_logout'  => '/auth/logout',
+    'auth_me'      => '/auth/me',
+    'login'        => '/login',
+    'recuperar'    => '/recuperar',
+    'dashboard'    => '/dashboard',
 ];
+
+$rutasPorModulo = [
+    'usuarios' => [
+        'usuarios'          => '/usuarios',
+        'usuarios_listar'   => '/usuarios/listar',
+        'usuarios_obtener'  => '/usuarios/obtener',
+        'usuarios_guardar'  => '/usuarios/guardar',
+        'usuarios_eliminar' => '/usuarios/eliminar',
+        'usuarios_verificar_cedula' => '/usuarios/verificar-cedula',
+        'usuarios_roles_listar'   => '/usuarios/roles/listar',
+        'usuarios_roles_guardar'  => '/usuarios/roles/guardar',
+        'usuarios_roles_eliminar' => '/usuarios/roles/eliminar',
+        'usuarios_roles_verificar_uso' => '/usuarios/roles/verificar-uso',
+    ],
+    'perfil' => [
+        'perfil'            => '/perfil',
+        'perfil_obtener'    => '/perfil/obtener',
+        'perfil_actualizar' => '/perfil/actualizar',
+        'perfil_cambiar_clave' => '/perfil/cambiar-clave',
+    ],
+    'bitacora' => [
+        'bitacora'        => '/bitacora',
+        'bitacora_listar' => '/bitacora/listar',
+    ],
+    'ayuda' => [
+        'ayuda' => '/ayuda',
+    ],
+    'clientes' => [
+        'clientes'          => '/clientes',
+        'clientes_listar'   => '/clientes/listar',
+        'clientes_obtener'  => '/clientes/obtener',
+        'clientes_guardar'  => '/clientes/guardar',
+        'clientes_eliminar' => '/clientes/eliminar',
+        'clientes_verificar_cedula' => '/clientes/verificar-cedula',
+        'clientes_equipos_listar'   => '/clientes/equipos/listar',
+        'clientes_verificar_ventas' => '/clientes/verificar-ventas',
+    ],
+    'productos' => [
+        'productos'          => '/productos',
+        'productos_listar'   => '/productos/listar',
+        'productos_obtener'  => '/productos/obtener',
+        'productos_guardar'  => '/productos/guardar',
+        'productos_eliminar' => '/productos/eliminar',
+        'productos_tipos_listar'  => '/productos/tipos/listar',
+        'productos_tipos_guardar' => '/productos/tipos/guardar',
+        'productos_tipos_eliminar'=> '/productos/tipos/eliminar',
+    ],
+    'entradas' => [
+        'entradas'               => '/entradas',
+        'entradas_listar'        => '/entradas/listar',
+        'entradas_guardar'       => '/entradas/guardar',
+        'entradas_detalle'         => '/entradas/detalle',
+        'entradas_productos_buscar' => '/entradas/productos/buscar',
+        'entradas_producto_info'    => '/entradas/producto/info',
+        'entradas_config_precios'   => '/entradas/config/precios',
+    ],
+    'salidas' => [
+        'salidas'               => '/salidas',
+        'salidas_listar'        => '/salidas/listar',
+        'salidas_guardar'       => '/salidas/guardar',
+        'salidas_productos_buscar' => '/salidas/productos/buscar',
+        'salidas_producto_info'    => '/salidas/producto/info',
+    ],
+    'ventas' => [
+        'ventas'               => '/ventas',
+        'ventas_listar'        => '/ventas/listar',
+        'ventas_guardar'       => '/ventas/guardar',
+        'ventas_clientes_buscar'  => '/ventas/clientes/buscar',
+        'ventas_cliente_guardar'  => '/ventas/cliente/guardar',
+        'ventas_productos_buscar' => '/ventas/productos/buscar',
+        'ventas_producto_info'    => '/ventas/producto/info',
+        'ventas_tipos_pago'       => '/ventas/tipos-pago',
+        'ventas_cliente_credito'  => '/ventas/cliente/credito',
+        'ventas_tasa_bcv'         => '/ventas/tasa-bcv',
+        'ventas_detalle'          => '/ventas/detalle',
+    ],
+    'stock' => [
+        'stock'               => '/stock',
+        'stock_listar'        => '/stock/listar',
+        'stock_productos_buscar' => '/stock/productos/buscar',
+        'stock_producto_info'    => '/stock/producto/info',
+    ],
+    'reportes_pagos' => [
+        'reportes_pagos'        => '/reportes/pagos',
+        'reportes_pagos_generar' => '/reportes/pagos/generar',
+    ],
+    'reportes_generales' => [
+        'reportes_generales'        => '/reportes/generales',
+        'reportes_generales_generar' => '/reportes/generales/generar',
+    ],
+];
+
+$modulo = $modulo ?? '';
+$rutasMap = $rutasGlobales;
+if ($modulo !== '' && isset($rutasPorModulo[$modulo])) {
+    $rutasMap = array_merge($rutasMap, $rutasPorModulo[$modulo]);
+}
 
 $navMap = [];
 foreach ($rutasMap as $k => $r) {
@@ -82,19 +123,13 @@ foreach ($rutasMap as $k => $r) {
 <?php endif; ?>
 
     <!-- jQuery -->
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="<?= BASE_URL ?>/assets/lib/jquery/jquery.min.js"></script>
 
     <!-- Bootstrap 5 JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= BASE_URL ?>/assets/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Select2 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
-
-    <!-- DataTables -->
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+    <!-- Librerías condicionales (Select2, DataTables, etc.) -->
+    <?= $extraLibsJS ?? '' ?>
 
     <!-- Configuración global JS -->
     <script>
@@ -124,7 +159,6 @@ foreach ($rutasMap as $k => $r) {
             var esPublico = <?= isset($esPublico) && $esPublico ? 'true' : 'false' ?>;
             if (esPublico) return;
 
-            // Verificar sesión: solo redirige si NO hay refresh_token guardado
             if (!window.AUTH.sesionActiva) {
                 window.location.replace(window.BASE_URL + window.NAV.login);
                 return;
@@ -134,18 +168,36 @@ foreach ($rutasMap as $k => $r) {
                 url: window.BASE_URL + window.ROUTES.auth_me,
                 type: 'GET',
                 dataType: 'json'
-            }).fail(function(xhr) {
-                if (xhr.status === 401 && !localStorage.getItem('refresh_token')) {
-                    window.location.replace(window.BASE_URL + window.NAV.login);
+            }).fail(async function(xhr) {
+                if (xhr.status === 401) {
+                    var ok = await Ajax.refrescarTokenSilencioso();
+                    if (!ok) {
+                        window.location.replace(window.BASE_URL + window.NAV.login);
+                    }
                 }
             });
 
-            // Toggle sidebar en móvil
+            var REFRESH_INTERVAL = 12 * 60 * 1000;
+            var inicioDiferido = 10 * 1000;
+
+            setTimeout(function() {
+                Ajax.refrescarTokenSilencioso();
+
+                setInterval(function() {
+                    Ajax.refrescarTokenSilencioso();
+                }, REFRESH_INTERVAL);
+            }, inicioDiferido);
+
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    Ajax.refrescarTokenSilencioso();
+                }
+            });
+
             $('#sidebar-toggle').on('click', function() {
                 $('.sidebar').toggleClass('show');
             });
 
-            // Cerrar sidebar al hacer click en un link en móvil
             $('.sidebar .nav-link').on('click', function() {
                 if ($(window).width() < 768) {
                     $('.sidebar').removeClass('show');

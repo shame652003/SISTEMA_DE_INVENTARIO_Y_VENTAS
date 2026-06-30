@@ -89,7 +89,7 @@ $(function () {
                     ],
                     responsive: true,
                     language: {
-                        url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                        url: window.BASE_URL + '/assets/lib/datatables/js/es-ES.json'
                     },
                     pageLength: 10,
                     lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'Todos']],

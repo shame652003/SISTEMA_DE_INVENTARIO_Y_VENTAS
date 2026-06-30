@@ -16,14 +16,13 @@ class EntradaController extends Controller
         $margenUsd = $entrada->obtenerMargenActual('USD');
         $margenVes = $entrada->obtenerMargenActual('VES');
 
-        $this->render('entradas/entradas', [
+        $this->render('entradas/entradas', array_merge([
             'titulo' => 'Entradas de Productos',
             'seccion' => 'entradas',
             'tasa' => $tasa,
             'margenUsd' => $margenUsd,
             'margenVes' => $margenVes,
-            'extraJS' => '<script src="' . BASE_URL . '/assets/js/entradas.js"></script>',
-        ], 'app');
+        ], $this->datosModulo('entradas', 'entradas.js')), 'app');
     }
 
     public function listar(): void

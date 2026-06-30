@@ -10,11 +10,10 @@ class StockController extends Controller
     public function index(): void
     {
         if (!$this->verificarPermisoVista('stock')) return;
-        $this->render('stock/stock', [
+        $this->render('stock/stock', array_merge([
             'titulo' => 'Stock e Inventario',
             'seccion' => 'stock',
-            'extraJS' => '<script src="' . BASE_URL . '/assets/js/stock.js"></script>',
-        ], 'app');
+        ], $this->datosModulo('stock', 'stock.js')), 'app');
     }
 
     public function listar(): void

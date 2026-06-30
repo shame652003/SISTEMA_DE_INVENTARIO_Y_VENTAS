@@ -10,11 +10,10 @@ class PerfilController extends Controller
 {
     public function index(): void
     {
-        $this->render('perfil/perfil', [
+        $this->render('perfil/perfil', array_merge([
             'titulo' => 'Mi Perfil',
             'seccion' => 'perfil',
-            'extraJS' => '<script src="' . BASE_URL . '/assets/js/perfil.js"></script>',
-        ], 'app');
+        ], $this->datosModulo('perfil', 'perfil.js')), 'app');
     }
 
     public function obtener(): void

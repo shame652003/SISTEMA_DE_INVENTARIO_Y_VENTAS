@@ -14,12 +14,11 @@ class ProductoController extends Controller
     {
         if (!$this->verificarPermisoVista('productos')) return;
         $producto = new Producto();
-        $this->render('productos/productos', [
+        $this->render('productos/productos', array_merge([
             'titulo' => 'Gestión de Productos',
             'seccion' => 'productos',
             'tipos' => $producto->obtenerTipos(),
-            'extraJS' => '<script src="' . BASE_URL . '/assets/js/productos.js"></script>',
-        ], 'app');
+        ], $this->datosModulo('productos', 'productos.js')), 'app');
     }
 
     public function listar(): void

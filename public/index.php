@@ -98,9 +98,17 @@ $router->post('/salidas/productos/buscar',  'SalidaController', 'buscarProductos
 $router->post('/salidas/producto/info',     'SalidaController', 'productoInfo',    'auth');
 
 // Ventas
-$router->get('/ventas',          'VentaController', 'index',  'auth');
-$router->post('/ventas/listar',  'VentaController', 'listar', 'auth');
-$router->post('/ventas/guardar', 'VentaController', 'guardar','auth');
+$router->get('/ventas',                      'VentaController', 'index',               'auth');
+$router->post('/ventas/listar',              'VentaController', 'listar',              'auth');
+$router->post('/ventas/guardar',             'VentaController', 'guardar',             'auth');
+$router->post('/ventas/clientes/buscar',     'VentaController', 'buscarClientes',      'auth');
+$router->post('/ventas/cliente/guardar',     'VentaController', 'guardarClienteRapido','auth');
+$router->post('/ventas/productos/buscar',    'VentaController', 'buscarProductos',     'auth');
+$router->post('/ventas/producto/info',       'VentaController', 'productoInfo',        'auth');
+$router->post('/ventas/tipos-pago',          'VentaController', 'tiposPago',           'auth');
+$router->post('/ventas/cliente/credito', 'VentaController', 'clienteCredito', 'auth');
+$router->post('/ventas/tasa-bcv', 'VentaController', 'tasaBcv', 'auth');
+$router->post('/ventas/detalle',             'VentaController', 'detalle',             'auth');
 
 // Stock
 $router->get('/stock',                    'StockController', 'index',           'auth');

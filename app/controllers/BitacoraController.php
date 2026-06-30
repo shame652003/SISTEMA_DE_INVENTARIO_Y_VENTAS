@@ -9,11 +9,10 @@ class BitacoraController extends Controller
     public function index(): void
     {
         if (!$this->verificarPermisoVista('bitacora')) return;
-        $this->render('bitacora/bitacora', [
+        $this->render('bitacora/bitacora', array_merge([
             'titulo' => 'Bitácora de Auditoría',
             'seccion' => 'bitacora',
-            'extraJS' => '<script src="' . BASE_URL . '/assets/js/bitacora.js"></script>',
-        ], 'app');
+        ], $this->datosModulo('bitacora', 'bitacora.js')), 'app');
     }
 
     public function listar(): void

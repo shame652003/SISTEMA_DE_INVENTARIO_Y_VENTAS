@@ -11,11 +11,10 @@ class ClienteController extends Controller
     public function index(): void
     {
         if (!$this->verificarPermisoVista('clientes')) return;
-        $this->render('clientes/clientes', [
+        $this->render('clientes/clientes', array_merge([
             'titulo' => 'Gestión de Clientes',
             'seccion' => 'clientes',
-            'extraJS' => '<script src="' . BASE_URL . '/assets/js/clientes.js"></script>',
-        ], 'app');
+        ], $this->datosModulo('clientes', 'clientes.js')), 'app');
     }
 
     public function listar(): void

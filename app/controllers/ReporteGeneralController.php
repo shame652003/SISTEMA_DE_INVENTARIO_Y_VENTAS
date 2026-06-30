@@ -9,11 +9,10 @@ class ReporteGeneralController extends Controller
     public function index(): void
     {
         if (!$this->verificarPermisoVista('reportes_generales')) return;
-        $this->render('reportes_generales/reportes_generales', [
+        $this->render('reportes_generales/reportes_generales', array_merge([
             'titulo' => 'Reportes Generales',
             'seccion' => 'reportes_generales',
-            'extraJS' => '<script src="' . BASE_URL . '/assets/js/reportes.js"></script>',
-        ], 'app');
+        ], $this->datosModulo('reportes_generales', 'reportes.js')), 'app');
     }
 
     public function generar(): void
