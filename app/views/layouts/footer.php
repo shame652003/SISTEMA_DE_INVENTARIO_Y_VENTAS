@@ -74,17 +74,7 @@ $rutasPorModulo = [
         'salidas_producto_info'    => '/salidas/producto/info',
     ],
     'ventas' => [
-        'ventas'               => '/ventas',
-        'ventas_listar'        => '/ventas/listar',
-        'ventas_guardar'       => '/ventas/guardar',
-        'ventas_clientes_buscar'  => '/ventas/clientes/buscar',
-        'ventas_cliente_guardar'  => '/ventas/cliente/guardar',
-        'ventas_productos_buscar' => '/ventas/productos/buscar',
-        'ventas_producto_info'    => '/ventas/producto/info',
-        'ventas_tipos_pago'       => '/ventas/tipos-pago',
-        'ventas_cliente_credito'  => '/ventas/cliente/credito',
-        'ventas_tasa_bcv'         => '/ventas/tasa-bcv',
-        'ventas_detalle'          => '/ventas/detalle',
+        'ventas' => '/ventas',
     ],
     'stock' => [
         'stock'               => '/stock',
