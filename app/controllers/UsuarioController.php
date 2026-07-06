@@ -120,7 +120,7 @@ class UsuarioController extends Controller
             $mensaje = $ok ? 'Usuario creado correctamente. Contraseña predeterminada: 123456' : 'Error al crear usuario.';
         }
 
-        $this->json(['ok' => $ok, 'mensaje' => $mensaje]);
+        $this->json(['ok' => $ok, 'mensaje' => $mensaje], $ok ? 200 : 500);
     }
 
     public function eliminar(): void
@@ -134,7 +134,7 @@ class UsuarioController extends Controller
 
         $usuario = new Usuario();
         $ok = $usuario->eliminar((int) $cedula);
-        $this->json(['ok' => $ok, 'mensaje' => $ok ? 'Usuario eliminado correctamente.' : 'Error al eliminar usuario.']);
+        $this->json(['ok' => $ok, 'mensaje' => $ok ? 'Usuario eliminado correctamente.' : 'Error al eliminar usuario.'], $ok ? 200 : 500);
     }
 
     public function verificarCedula(): void
@@ -189,7 +189,7 @@ class UsuarioController extends Controller
             $mensaje = $ok ? 'Rol creado correctamente.' : 'Error al crear rol.';
         }
 
-        $this->json(['ok' => $ok, 'mensaje' => $mensaje]);
+        $this->json(['ok' => $ok, 'mensaje' => $mensaje], $ok ? 200 : 500);
     }
 
     public function eliminarRol(): void
@@ -207,7 +207,7 @@ class UsuarioController extends Controller
             return;
         }
         $ok = $rol->eliminar((int) $idRol);
-        $this->json(['ok' => $ok, 'mensaje' => $ok ? 'Rol eliminado correctamente.' : 'Error al eliminar rol.']);
+        $this->json(['ok' => $ok, 'mensaje' => $ok ? 'Rol eliminado correctamente.' : 'Error al eliminar rol.'], $ok ? 200 : 500);
     }
 
     public function verificarUsoRol(): void

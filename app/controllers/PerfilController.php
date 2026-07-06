@@ -148,6 +148,6 @@ class PerfilController extends Controller
         }
 
         $ok = $model->actualizar($cedula, ['clave' => password_hash($claveNueva, PASSWORD_DEFAULT)]);
-        $this->json(['ok' => $ok, 'mensaje' => $ok ? 'Contraseña cambiada correctamente.' : 'Error al cambiar contraseña.']);
+        $this->json(['ok' => $ok, 'mensaje' => $ok ? 'Contraseña cambiada correctamente.' : 'Error al cambiar contraseña.'], $ok ? 200 : 500);
     }
 }

@@ -104,7 +104,7 @@ class ProductoController extends Controller
             $mensaje = $ok ? 'Producto actualizado correctamente.' : 'Error al actualizar el producto.';
         }
 
-        $this->json(['ok' => $ok, 'mensaje' => $mensaje]);
+        $this->json(['ok' => $ok, 'mensaje' => $mensaje], $ok ? 200 : 500);
     }
 
     public function eliminar(): void

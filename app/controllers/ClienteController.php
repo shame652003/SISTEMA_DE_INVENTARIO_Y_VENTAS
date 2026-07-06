@@ -97,7 +97,7 @@ class ClienteController extends Controller
             $mensaje = $ok ? 'Cliente actualizado correctamente.' : 'Error al actualizar cliente.';
         }
 
-        $this->json(['ok' => $ok, 'mensaje' => $mensaje]);
+        $this->json(['ok' => $ok, 'mensaje' => $mensaje], $ok ? 200 : 500);
     }
 
     public function eliminar(): void
@@ -111,7 +111,7 @@ class ClienteController extends Controller
 
         $cliente = new Cliente();
         $ok = $cliente->eliminar((int) $cedula);
-        $this->json(['ok' => $ok, 'mensaje' => $ok ? 'Cliente eliminado correctamente.' : 'Error al eliminar cliente.']);
+        $this->json(['ok' => $ok, 'mensaje' => $ok ? 'Cliente eliminado correctamente.' : 'Error al eliminar cliente.'], $ok ? 200 : 500);
     }
 
     public function verificarCedula(): void

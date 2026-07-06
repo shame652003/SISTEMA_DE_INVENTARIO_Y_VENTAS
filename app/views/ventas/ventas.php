@@ -6,18 +6,18 @@ $tiposPago = $tiposPago ?? [];
 
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <div class="card-body text-white">
+            <div class="card border-0 shadow-sm dashboard-header">
+                <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
                     <div class="d-flex align-items-center gap-3">
-                        <div class="bg-white bg-opacity-25 rounded-circle p-3">
-                            <i class="bi bi-cart-check fs-2"></i>
+                        <div class="header-icon bg-primary-soft">
+                            <i class="bi bi-person-lines-fill text-primary"></i>
                         </div>
                         <div>
-                            <h3 class="mb-0 fw-bold">Nueva Venta</h3>
+                            <h4 class="mb-1 fw-bold text-dark">Gestión de Ventas</h4>
                             <nav aria-label="breadcrumb">
                                 <ol class="breadcrumb mb-0 small">
-                                    <li class="breadcrumb-item"><a href="<?= BASE_URL . UrlCipher::encrypt('/dashboard') ?>" class="text-white text-decoration-none">Dashboard</a></li>
-                                    <li class="breadcrumb-item text-white-50 active">Ventas</li>
+                                    <li class="breadcrumb-item"><a href="<?= BASE_URL . UrlCipher::encrypt('/dashboard') ?>" class="text-decoration-none">Dashboard</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page">Ventas</li>
                                 </ol>
                             </nav>
                         </div>

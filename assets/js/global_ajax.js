@@ -106,29 +106,35 @@ const Ajax = (function () {
                 procesarCola(!ok);
 
                 if (ok) {
-                    // Reintentar el request original y propagar su respuesta
                     $.ajax(settings)
                         .done(function (data, textStatus, jqXHR) {
-                            // Disparar evento global para que el codigo original pueda reaccionar
-                            $(document).trigger('ajax-retry-success', [settings, data, textStatus, jqXHR]);
+                            // Si el request original fue hecho con Ajax.post/get/upload, usar su deferred
+                            if (xhr.retryDeferred) {
+                                xhr.retryDeferred.resolve(data);
+                            } else {
+                                $(document).trigger('ajax-retry-success', [settings, data, textStatus, jqXHR]);
+                            }
                         })
                         .fail(function (retryXhr) {
                             if (retryXhr.status === 401) {
-                                // El retry tambien fallo con 401 -> cookie no se aplico, ir a login
                                 refreshFailed = true;
                                 limpiarTokens();
                                 irALogin();
+                            } else if (xhr.retryDeferred) {
+                                xhr.retryDeferred.reject(retryXhr);
                             } else {
                                 $(document).trigger('ajax-retry-error', [settings, retryXhr]);
                             }
                         });
                 } else {
+                    if (xhr.retryDeferred) {
+                        xhr.retryDeferred.reject(xhr);
+                    }
                     Swal.fire({ icon: 'info', title: 'Sesion expirada', text: 'Inicie sesion nuevamente.' }).then(function () {
                         irALogin();
                     });
                 }
             } else {
-                // Ya hay un refresh en curso, encolar este request
                 return new Promise(function (resolve, reject) {
                     refreshQueue.push({ resolve, reject });
                 }).then(function () {
@@ -146,24 +152,55 @@ const Ajax = (function () {
 
     return {
         get: function (url, data = {}) {
-            return $.get(BASE_URL + url, data);
+            var deferred = $.Deferred();
+            var jqXHR = $.ajax({
+                url: BASE_URL + url,
+                type: 'GET',
+                data: data,
+                dataType: 'json'
+            }).done(function (res) {
+                deferred.resolve(res);
+            }).fail(function (xhr) {
+                deferred.reject(xhr);
+            });
+            jqXHR.retryDeferred = deferred;
+            return deferred.promise();
         },
 
         post: function (url, data = {}, options = {}) {
-            return $.post(BASE_URL + url, data, null, 'json').fail(function (xhr) {
+            var deferred = $.Deferred();
+            var jqXHR = $.ajax({
+                url: BASE_URL + url,
+                type: 'POST',
+                data: data,
+                dataType: 'json'
+            }).done(function (res) {
+                deferred.resolve(res);
+            }).fail(function (xhr) {
                 if (options.onError) options.onError(xhr);
+                deferred.reject(xhr);
             });
+            jqXHR.retryDeferred = deferred;
+            return deferred.promise();
         },
 
-        upload: function (url, formData) {
-            return $.ajax({
+        upload: function (url, formData, options = {}) {
+            var deferred = $.Deferred();
+            var jqXHR = $.ajax({
                 url: BASE_URL + url,
                 type: 'POST',
                 data: formData,
                 processData: false,
                 contentType: false,
                 dataType: 'json'
+            }).done(function (res) {
+                deferred.resolve(res);
+            }).fail(function (xhr) {
+                if (options.onError) options.onError(xhr);
+                deferred.reject(xhr);
             });
+            jqXHR.retryDeferred = deferred;
+            return deferred.promise();
         },
 
         getRefreshToken: getRefreshToken,

@@ -171,7 +171,9 @@ $(function () {
         Ajax.post(window.ROUTES.clientes_obtener, { cedula: cedula })
             .done(function (res) {
                 if (!res.ok || !res.data) {
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'Cliente no encontrado' });
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'error', title: 'Error', text: 'Cliente no encontrado' });
+                    }
                     return;
                 }
                 const c = res.data;
@@ -198,48 +200,72 @@ $(function () {
         Ajax.post(window.ROUTES.clientes_verificar_ventas, { cedula: cedula })
             .done(function (res) {
                 if (res.ok && res.enUso) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Cliente con ventas',
-                        text: `El cliente "${nombre}" tiene ${res.count} venta(s) registrada(s) y no puede ser eliminado.`
-                    });
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Cliente con ventas',
+                            text: `El cliente "${nombre}" tiene ${res.count} venta(s) registrada(s) y no puede ser eliminado.`
+                        });
+                    }
                     return;
                 }
 
-                Swal.fire({
-                    icon: 'warning',
-                    title: '¿Eliminar cliente?',
-                    text: `¿Estás seguro de eliminar a ${nombre}?`,
-                    showCancelButton: true,
-                    confirmButtonText: 'Sí, eliminar',
-                    cancelButtonText: 'Cancelar',
-                    confirmButtonColor: '#dc3545'
-                }).then(function (result) {
-                    if (result.isConfirmed) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '¿Eliminar cliente?',
+                        text: `¿Estás seguro de eliminar a ${nombre}?`,
+                        showCancelButton: true,
+                        confirmButtonText: 'Sí, eliminar',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#dc3545'
+                    }).then(function (result) {
+                        if (result.isConfirmed) {
+                            Ajax.post(window.ROUTES.clientes_eliminar, { cedula: cedula })
+                                .done(function (res) {
+                                    if (typeof Swal !== 'undefined') {
+                                        Swal.fire({ icon: 'success', title: 'Éxito', text: (res && res.mensaje) || 'Eliminado correctamente.', timer: 2500, showConfirmButton: false });
+                                    }
+                                    cargarClientes();
+                                });
+                        }
+                    });
+                } else {
+                    if (confirm(`¿Estás seguro de eliminar a ${nombre}?`)) {
                         Ajax.post(window.ROUTES.clientes_eliminar, { cedula: cedula })
                             .done(function (res) {
-                                Swal.fire({ icon: 'success', title: 'Éxito', text: res.mensaje, timer: 1500, showConfirmButton: false });
                                 cargarClientes();
                             });
                     }
-                });
+                }
             });
     });
 
     $('#form-cliente').on('submit', function (e) {
         e.preventDefault();
         Validaciones.limpiarErrores('#form-cliente');
-        if (!Validaciones.validarFormulario('#form-cliente')) return;
+        if (!Validaciones.validarFormulario('#form-cliente')) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'warning', title: 'Campos incompletos', text: 'Complete todos los campos obligatorios.', timer: 3000, showConfirmButton: true });
+            }
+            return;
+        }
 
         Ajax.post(window.ROUTES.clientes_guardar, $(this).serialize())
             .done(function (res) {
-                Swal.fire({ icon: 'success', title: 'Éxito', text: res.mensaje, timer: 1500, showConfirmButton: false });
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'success', title: 'Éxito', text: (res && res.mensaje) || 'Operación completada.', timer: 2500, showConfirmButton: false });
+                }
                 modalCliente.hide();
                 cargarClientes();
             }).fail(function (xhr) {
                 var msg = 'Error al guardar cliente.';
-                try { var r = JSON.parse(xhr.responseText); if (r.mensaje) msg = r.mensaje; } catch (e) {}
-                Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                try { var r = JSON.parse(xhr.responseText); if (r && r.mensaje) msg = r.mensaje; } catch (e) {}
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                } else {
+                    alert(msg);
+                }
             });
     });
 
