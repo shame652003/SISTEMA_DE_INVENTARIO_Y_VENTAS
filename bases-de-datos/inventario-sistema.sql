@@ -2,8 +2,8 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
-CREATE DATABASE IF NOT EXISTS sistemainventario CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE sistemainventario;
+CREATE DATABASE IF NOT EXISTS prueba CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE prueba;
 
 -- ==========================================
 -- 1. MODULO DE SEGURIDAD Y ROLES
@@ -83,79 +83,79 @@ VALUES
 -- ==========================================
 -- 3. MODULO DE INVENTARIO
 -- ==========================================
-CREATE TABLE tipo_productos (
-    idTipoA INT AUTO_INCREMENT PRIMARY KEY,
-    tipo VARCHAR(50) NOT NULL,
-    status TINYINT(1) NOT NULL DEFAULT 1,
-    UNIQUE KEY uk_tipo_productos_tipo (tipo)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    CREATE TABLE tipo_productos (
+        idTipoA INT AUTO_INCREMENT PRIMARY KEY,
+        tipo VARCHAR(50) NOT NULL,
+        status TINYINT(1) NOT NULL DEFAULT 1,
+        UNIQUE KEY uk_tipo_productos_tipo (tipo)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE producto (
-    idproducto INT AUTO_INCREMENT PRIMARY KEY,
-    codigo VARCHAR(50) NOT NULL,
-    imgproducto VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
-    nombre VARCHAR(100) NOT NULL,
-    marca VARCHAR(50) NOT NULL,
-    stock DECIMAL(12,3) NOT NULL DEFAULT 0.000,
-    stock_minimo DECIMAL(12,3) NOT NULL DEFAULT 5.000,
-    precio_costo_usd DECIMAL(12,2) NOT NULL,
-    precio_venta_usd DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-    precio_venta_ves DECIMAL(14,2) NOT NULL DEFAULT 0.00,
-    idTipoA INT NOT NULL,
-    status TINYINT(1) NOT NULL DEFAULT 1,
-    UNIQUE KEY uk_producto_codigo (codigo),
-    KEY idx_producto_tipo (idTipoA),
-    CONSTRAINT fk_producto_tipo FOREIGN KEY (idTipoA) REFERENCES tipo_productos(idTipoA)
-        ON UPDATE CASCADE,
-    CHECK (stock >= 0),
-    CHECK (stock_minimo >= 0),
-    CHECK (precio_costo_usd >= 0),
-    CHECK (precio_venta_usd >= 0),
-    CHECK (precio_venta_ves >= 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    CREATE TABLE producto (
+        idproducto INT AUTO_INCREMENT PRIMARY KEY,
+        codigo VARCHAR(50) NOT NULL,
+        imgproducto VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+        nombre VARCHAR(100) NOT NULL,
+        marca VARCHAR(50) NOT NULL,
+        stock DECIMAL(12,3) NOT NULL DEFAULT 0.000,
+        stock_minimo DECIMAL(12,3) NOT NULL DEFAULT 5.000,
+        precio_costo_usd DECIMAL(12,2) NOT NULL,
+        precio_venta_usd DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        precio_venta_ves DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+        idTipoA INT NOT NULL,
+        status TINYINT(1) NOT NULL DEFAULT 1,
+        UNIQUE KEY uk_producto_codigo (codigo),
+        KEY idx_producto_tipo (idTipoA),
+        CONSTRAINT fk_producto_tipo FOREIGN KEY (idTipoA) REFERENCES tipo_productos(idTipoA)
+            ON UPDATE CASCADE,
+        CHECK (stock >= 0),
+        CHECK (stock_minimo >= 0),
+        CHECK (precio_costo_usd >= 0),
+        CHECK (precio_venta_usd >= 0),
+        CHECK (precio_venta_ves >= 0)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE producto_precio_historial (
-    idHistorialPrecio INT AUTO_INCREMENT PRIMARY KEY,
-    idproducto INT NOT NULL,
-    idTasa INT NOT NULL,
-    idMargenUsd INT NOT NULL,
-    idMargenVes INT NOT NULL,
-    precio_costo_usd DECIMAL(12,2) NOT NULL,
-    precio_venta_usd DECIMAL(12,2) NOT NULL,
-    precio_venta_ves DECIMAL(14,2) NOT NULL,
-    fecha_calculo DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_historial_producto FOREIGN KEY (idproducto) REFERENCES producto(idproducto)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_historial_tasa FOREIGN KEY (idTasa) REFERENCES bcv_tasas(idTasa)
-        ON UPDATE CASCADE,
-    CONSTRAINT fk_historial_margen_usd FOREIGN KEY (idMargenUsd) REFERENCES margen_ganancia(idMargen)
-        ON UPDATE CASCADE,
-    CONSTRAINT fk_historial_margen_ves FOREIGN KEY (idMargenVes) REFERENCES margen_ganancia(idMargen)
-        ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    CREATE TABLE producto_precio_historial (
+        idHistorialPrecio INT AUTO_INCREMENT PRIMARY KEY,
+        idproducto INT NOT NULL,
+        idTasa INT NOT NULL,
+        idMargenUsd INT NOT NULL,
+        idMargenVes INT NOT NULL,
+        precio_costo_usd DECIMAL(12,2) NOT NULL,
+        precio_venta_usd DECIMAL(12,2) NOT NULL,
+        precio_venta_ves DECIMAL(14,2) NOT NULL,
+        fecha_calculo DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_historial_producto FOREIGN KEY (idproducto) REFERENCES producto(idproducto)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+        CONSTRAINT fk_historial_tasa FOREIGN KEY (idTasa) REFERENCES bcv_tasas(idTasa)
+            ON UPDATE CASCADE,
+        CONSTRAINT fk_historial_margen_usd FOREIGN KEY (idMargenUsd) REFERENCES margen_ganancia(idMargen)
+            ON UPDATE CASCADE,
+        CONSTRAINT fk_historial_margen_ves FOREIGN KEY (idMargenVes) REFERENCES margen_ganancia(idMargen)
+            ON UPDATE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE entradaproducto (
-    idEntradaA INT AUTO_INCREMENT PRIMARY KEY,
-    fecha DATE NOT NULL DEFAULT (CURRENT_DATE),
-    hora TIME NOT NULL DEFAULT (CURRENT_TIME),
-    descripcion VARCHAR(300) NOT NULL,
-    status TINYINT(1) NOT NULL DEFAULT 1
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    CREATE TABLE entradaproducto (
+        idEntradaA INT AUTO_INCREMENT PRIMARY KEY,
+        fecha DATE NOT NULL DEFAULT (CURRENT_DATE),
+        hora TIME NOT NULL DEFAULT (CURRENT_TIME),
+        descripcion VARCHAR(300) NOT NULL,
+        status TINYINT(1) NOT NULL DEFAULT 1
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE detalleEntradaA (
-    idDetalleA INT AUTO_INCREMENT PRIMARY KEY,
-    cantidad DECIMAL(12,3) NOT NULL,
-    costo_unitario_usd DECIMAL(12,2) NULL,
-    idproducto INT NOT NULL,
-    idEntradaA INT NOT NULL,
-    status TINYINT(1) NOT NULL DEFAULT 1,
-    CONSTRAINT fk_detalle_entrada_producto FOREIGN KEY (idproducto) REFERENCES producto(idproducto)
-        ON UPDATE CASCADE,
-    CONSTRAINT fk_detalle_entrada_encabezado FOREIGN KEY (idEntradaA) REFERENCES entradaproducto(idEntradaA)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-    CHECK (cantidad > 0),
-    CHECK (costo_unitario_usd IS NULL OR costo_unitario_usd >= 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    CREATE TABLE detalleEntradaA (
+        idDetalleA INT AUTO_INCREMENT PRIMARY KEY,
+        cantidad DECIMAL(12,3) NOT NULL,
+        costo_unitario_usd DECIMAL(12,2) NULL,
+        idproducto INT NOT NULL,
+        idEntradaA INT NOT NULL,
+        status TINYINT(1) NOT NULL DEFAULT 1,
+        CONSTRAINT fk_detalle_entrada_producto FOREIGN KEY (idproducto) REFERENCES producto(idproducto)
+            ON UPDATE CASCADE,
+        CONSTRAINT fk_detalle_entrada_encabezado FOREIGN KEY (idEntradaA) REFERENCES entradaproducto(idEntradaA)
+            ON UPDATE CASCADE ON DELETE CASCADE,
+        CHECK (cantidad > 0),
+        CHECK (costo_unitario_usd IS NULL OR costo_unitario_usd >= 0)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE tipoSalidas (
     idTipoSalidas INT AUTO_INCREMENT PRIMARY KEY,
@@ -192,7 +192,7 @@ CREATE TABLE equipos_cliente (
     UNIQUE KEY uk_equipos_cliente_tipo (tipo_equipo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO equipos_cliente (tipo_equipo, status) VALUES ('Moto', 1);
+INSERT INTO equipos_cliente (tipo_equipo, status) VALUES ('Frecuente', 1);
 
 CREATE TABLE cliente (
     cedula INT PRIMARY KEY,
@@ -221,6 +221,7 @@ CREATE TABLE ventas_encabezado (
     idTasa INT NOT NULL DEFAULT 0,
     total_usd DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     total_ves DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    total_bcv DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     status TINYINT(1) NOT NULL DEFAULT 1,
     CONSTRAINT fk_venta_cliente FOREIGN KEY (cedula_cliente) REFERENCES cliente(cedula)
         ON UPDATE CASCADE,
@@ -240,9 +241,11 @@ CREATE TABLE ventas_detalle (
     costo_unitario_usd DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     precio_unitario_usd DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     precio_unitario_ves DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    precio_unitario_bcv DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     subtotal_costo_usd DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     subtotal_usd DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     subtotal_ves DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    subtotal_bcv DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     CONSTRAINT fk_detalle_venta FOREIGN KEY (idVenta) REFERENCES ventas_encabezado(idVenta)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_detalle_producto FOREIGN KEY (idproducto) REFERENCES producto(idproducto)
@@ -272,6 +275,7 @@ CREATE TABLE pagos (
     idtipo_de_pagos INT NOT NULL,
     moneda ENUM('USD', 'VES') NOT NULL,
     monto_recibido DECIMAL(14,2) NOT NULL,
+    monto_bcv DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     referencia VARCHAR(100) NULL,
     fecha_pago DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_pago_venta FOREIGN KEY (idVenta) REFERENCES ventas_encabezado(idVenta)
@@ -285,10 +289,12 @@ CREATE TABLE creditos (
     idCredito INT AUTO_INCREMENT PRIMARY KEY,
     cedula_cliente INT NOT NULL UNIQUE,
     saldo_deudor_usd DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    saldo_deudor_bcv DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     ultima_actualizacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_credito_cliente FOREIGN KEY (cedula_cliente) REFERENCES cliente(cedula)
         ON UPDATE CASCADE,
-    CHECK (saldo_deudor_usd >= 0)
+    CHECK (saldo_deudor_usd >= 0),
+    CHECK (saldo_deudor_bcv >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ==========================================
@@ -324,7 +330,6 @@ SELECT
     p.codigo,
     p.nombre,
     p.marca,
-    p.unidadMedida,
     tp.tipo AS tipo_producto,
     p.stock,
     p.stock_minimo,
@@ -544,10 +549,11 @@ SELECT
     c.cedula,
     CONCAT(c.nombre, ' ', c.apellido) AS cliente,
     cr.saldo_deudor_usd,
+    cr.saldo_deudor_bcv,
     cr.ultima_actualizacion
 FROM creditos cr
 INNER JOIN cliente c ON c.cedula = cr.cedula_cliente
-WHERE cr.saldo_deudor_usd > 0;
+WHERE cr.saldo_deudor_bcv > 0;
 
 CREATE VIEW vw_resumen_dashboard AS
 SELECT
@@ -557,7 +563,7 @@ SELECT
     (SELECT COUNT(*) FROM ventas_encabezado WHERE status = 1 AND fecha = CURRENT_DATE) AS ventas_hoy,
     (SELECT COALESCE(SUM(total_usd), 0) FROM ventas_encabezado WHERE status = 1 AND fecha = CURRENT_DATE) AS total_usd_hoy,
     (SELECT COALESCE(SUM(total_ves), 0) FROM ventas_encabezado WHERE status = 1 AND fecha = CURRENT_DATE) AS total_ves_hoy,
-    (SELECT COALESCE(SUM(saldo_deudor_usd), 0) FROM creditos) AS creditos_pendientes_usd;
+    (SELECT COALESCE(SUM(saldo_deudor_bcv), 0) FROM creditos) AS creditos_pendientes_bcv;
 
 -- ==========================================
 -- 8. LOGICA AUTOMATICA
@@ -1074,6 +1080,7 @@ BEGIN
     DECLARE v_costo_usd DECIMAL(12,2);
     DECLARE v_precio_usd DECIMAL(12,2);
     DECLARE v_precio_ves DECIMAL(14,2);
+    DECLARE v_tasa DECIMAL(14,4);
 
     IF NEW.costo_unitario_usd = 0 THEN
         SELECT precio_costo_usd
@@ -1105,6 +1112,20 @@ BEGIN
     SET NEW.subtotal_costo_usd = ROUND(NEW.cantidad * NEW.costo_unitario_usd, 2);
     SET NEW.subtotal_usd = ROUND(NEW.cantidad * NEW.precio_unitario_usd, 2);
     SET NEW.subtotal_ves = ROUND(NEW.cantidad * NEW.precio_unitario_ves, 2);
+
+    IF NEW.precio_unitario_bcv = 0 THEN
+        SELECT t.tasa_ves_por_usd
+        INTO v_tasa
+        FROM bcv_tasas t
+        INNER JOIN ventas_encabezado ve ON ve.idTasa = t.idTasa
+        WHERE ve.idVenta = NEW.idVenta;
+
+        SET NEW.precio_unitario_bcv = ROUND(NEW.precio_unitario_ves / v_tasa, 2);
+    END IF;
+
+    IF NEW.subtotal_bcv = 0 THEN
+        SET NEW.subtotal_bcv = ROUND(NEW.cantidad * NEW.precio_unitario_bcv, 2);
+    END IF;
 END //
 
 CREATE TRIGGER trg_actualizar_stock_venta
@@ -1120,7 +1141,8 @@ BEGIN
     UPDATE ventas_encabezado
     SET
         total_usd = total_usd + NEW.subtotal_usd,
-        total_ves = total_ves + NEW.subtotal_ves
+        total_ves = total_ves + NEW.subtotal_ves,
+        total_bcv = total_bcv + NEW.subtotal_bcv
     WHERE idVenta = NEW.idVenta;
 
     SET @bitacora_silenciar = 0;
@@ -1179,18 +1201,16 @@ BEGIN
         WHERE idtipo_de_pagos = NEW.idtipo_de_pagos
           AND tipoPago = 'Credito'
     ) THEN
-        INSERT INTO creditos (cedula_cliente, saldo_deudor_usd)
+        INSERT INTO creditos (cedula_cliente, saldo_deudor_usd, saldo_deudor_bcv)
         SELECT
             v.cedula_cliente,
-            CASE
-                WHEN NEW.moneda = 'USD' THEN NEW.monto_recibido
-                ELSE ROUND(NEW.monto_recibido / t.tasa_ves_por_usd, 2)
-            END
+            ROUND(v.total_usd * (NEW.monto_bcv / v.total_bcv), 2),
+            NEW.monto_bcv
         FROM ventas_encabezado v
-        INNER JOIN bcv_tasas t ON t.idTasa = v.idTasa
         WHERE v.idVenta = NEW.idVenta
         ON DUPLICATE KEY UPDATE
-            saldo_deudor_usd = saldo_deudor_usd + VALUES(saldo_deudor_usd);
+            saldo_deudor_usd = saldo_deudor_usd + VALUES(saldo_deudor_usd),
+            saldo_deudor_bcv = saldo_deudor_bcv + VALUES(saldo_deudor_bcv);
     END IF;
 
     CALL sp_registrar_bitacora(

@@ -74,7 +74,16 @@ $rutasPorModulo = [
         'salidas_producto_info'    => '/salidas/producto/info',
     ],
     'ventas' => [
-        'ventas' => '/ventas',
+        'ventas'               => '/ventas',
+        'ventas_config_inicial'   => '/ventas/config/inicial',
+        'ventas_clientes_buscar'  => '/ventas/clientes/buscar',
+        'ventas_cliente_info'     => '/ventas/cliente/info',
+        'ventas_cliente_registrar_rapido' => '/ventas/cliente/registrar-rapido',
+        'ventas_productos_buscar' => '/ventas/productos/buscar',
+        'ventas_producto_info'    => '/ventas/producto/info',
+        'ventas_guardar'          => '/ventas/guardar',
+        'ventas_listar'           => '/ventas/listar',
+        'ventas_detalle'          => '/ventas/detalle',
     ],
     'stock' => [
         'stock'               => '/stock',

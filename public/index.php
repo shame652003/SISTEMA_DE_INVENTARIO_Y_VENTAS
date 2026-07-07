@@ -99,6 +99,15 @@ $router->post('/salidas/producto/info',     'SalidaController', 'productoInfo', 
 
 // Ventas
 $router->get('/ventas', 'VentaController', 'index', 'auth');
+$router->post('/ventas/config/inicial',   'VentaController', 'configInicial',   'auth');
+$router->post('/ventas/clientes/buscar',  'VentaController', 'clientesBuscar',  'auth');
+$router->post('/ventas/cliente/info',     'VentaController', 'clienteInfo',     'auth');
+$router->post('/ventas/cliente/registrar-rapido', 'VentaController', 'clienteRegistrarRapido', 'auth');
+$router->post('/ventas/productos/buscar', 'VentaController', 'productosBuscar', 'auth');
+$router->post('/ventas/producto/info',    'VentaController', 'productoInfo',    'auth');
+$router->post('/ventas/guardar',          'VentaController', 'guardar',         'auth');
+$router->post('/ventas/listar',           'VentaController', 'listar',          'auth');
+$router->post('/ventas/detalle',          'VentaController', 'detalle',         'auth');
 
 // Stock
 $router->get('/stock',                    'StockController', 'index',           'auth');
