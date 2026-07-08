@@ -63,8 +63,8 @@ class Controller
 
     protected function datosModulo(string $modulo, string $jsFile = ''): array
     {
-        $necesitaSelect2 = in_array($modulo, ['ventas', 'clientes', 'entradas', 'salidas', 'stock']);
-        $necesitaDataTables = in_array($modulo, ['dashboard', 'usuarios', 'clientes', 'productos', 'entradas', 'salidas', 'stock']);
+        $necesitaSelect2 = in_array($modulo, ['ventas', 'clientes', 'entradas', 'salidas', 'stock', 'reportes_pagos']);
+        $necesitaDataTables = in_array($modulo, ['dashboard', 'usuarios', 'clientes', 'productos', 'entradas', 'salidas', 'stock', 'reportes_pagos']);
 
         $data = ['modulo' => $modulo];
 

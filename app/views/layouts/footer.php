@@ -92,8 +92,15 @@ $rutasPorModulo = [
         'stock_producto_info'    => '/stock/producto/info',
     ],
     'reportes_pagos' => [
-        'reportes_pagos'        => '/reportes/pagos',
-        'reportes_pagos_generar' => '/reportes/pagos/generar',
+        'reportes_pagos'              => '/reportes/pagos',
+        'reportes_pagos_generar'      => '/reportes/pagos/generar',
+        'reportes_pagos_creditos'     => '/reportes/pagos/creditos',
+        'reportes_pagos_cliente_detalle' => '/reportes/pagos/cliente-detalle',
+        'reportes_pagos_venta_detalle'   => '/reportes/pagos/venta-detalle',
+        'reportes_pagos_tipos'        => '/reportes/pagos/tipos',
+        'reportes_pagos_clientes_buscar' => '/reportes/pagos/clientes/buscar',
+        'reportes_pagos_saldo_credito'   => '/reportes/pagos/saldo-credito',
+        'reportes_pagos_abonar_credito'  => '/reportes/pagos/abonar-credito',
     ],
     'reportes_generales' => [
         'reportes_generales'        => '/reportes/generales',

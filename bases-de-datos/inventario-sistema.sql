@@ -271,7 +271,7 @@ VALUES ('Efectivo', 1), ('Transferencia', 1), ('Punto', 1), ('Biopago', 1), ('Cr
 
 CREATE TABLE pagos (
     idPago INT AUTO_INCREMENT PRIMARY KEY,
-    idVenta INT NOT NULL,
+    idVenta INT NULL,
     idtipo_de_pagos INT NOT NULL,
     moneda ENUM('USD', 'VES') NOT NULL,
     monto_recibido DECIMAL(14,2) NOT NULL,
@@ -554,6 +554,12 @@ SELECT
 FROM creditos cr
 INNER JOIN cliente c ON c.cedula = cr.cedula_cliente
 WHERE cr.saldo_deudor_bcv > 0;
+
+-- ALTER TABLE para abonos de crédito (idVenta puede ser NULL)
+-- Si la DB ya existe, ejecutar:
+-- ALTER TABLE pagos MODIFY COLUMN idVenta INT NULL;
+-- ALTER TABLE pagos DROP FOREIGN KEY fk_pago_venta;
+-- ALTER TABLE pagos ADD CONSTRAINT fk_pago_venta FOREIGN KEY (idVenta) REFERENCES ventas_encabezado(idVenta) ON UPDATE CASCADE;
 
 CREATE VIEW vw_resumen_dashboard AS
 SELECT
