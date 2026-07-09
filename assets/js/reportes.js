@@ -10,6 +10,7 @@ $(function () {
     var dtCreditos = null;
     var dtPagosCliente = null;
     var abonoModo = 'abonar';
+    var cedulaClienteExpandida = null;
 
     var modalVenta = new bootstrap.Modal(document.getElementById('modal-venta-detalle'));
     var modalAbono = new bootstrap.Modal(document.getElementById('modal-abonar-credito'));
@@ -51,7 +52,8 @@ $(function () {
             'Punto': 'primary',
             'Biopago': 'secondary',
             'Credito': 'warning',
-            'Zelle': 'dark'
+            'Zelle': 'dark',
+            'Binance USDT': 'warning'
         };
         var color = map[tipo] || 'secondary';
         return '<span class="badge bg-' + color + '">' + tipo + '</span>';
@@ -164,7 +166,7 @@ $(function () {
     $('#select-cliente').select2({
         placeholder: 'Buscar cliente por cédula o nombre...',
         ajax: {
-            url: window.ROUTES.reportes_pagos_clientes_buscar,
+            url: window.BASE_URL + window.ROUTES.reportes_pagos_clientes_buscar,
             type: 'POST',
             dataType: 'json',
             delay: 300,
@@ -215,7 +217,7 @@ $(function () {
                         '<td>' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
                         '<td>' + p.cliente + ' <small class="text-muted">(' + p.cedula_cliente + ')</small></td>' +
                         '<td>' + badgesMetodosPago(p.metodos_pago) + '</td>' +
-                        '<td class="text-end fw-bold">' + formatoMoneda(p.total_usd, 'USD') + '</td>' +
+                        '<td class="text-end fw-bold">' + formatoMoneda(p.total_bcv, 'USD') + '</td>' +
                         '<td>' + badgeEstadoCredito(p.credito_pagado, p.metodos_pago) + '</td>' +
                         '<td>' + p.vendedor + '</td>' +
                         '</tr>';
@@ -337,6 +339,7 @@ $(function () {
         $('#nombre-cliente-credito').text(nombre + ' (C.I. ' + cedula + ')');
         $('#card-pagos-cliente').removeClass('d-none');
         $('#credito-saldo-actual').hide();
+        cedulaClienteExpandida = cedula;
 
         // Cargar saldo actual de crédito
         Ajax.post(window.ROUTES.reportes_pagos_saldo_credito, { cedula: cedula })
@@ -352,64 +355,64 @@ $(function () {
         Ajax.post(window.ROUTES.reportes_pagos_cliente_detalle, { cedula: cedula })
             .done(function (res) {
                 if (!res.ok) return;
-
-                var rows = res.data || [];
-
-                if (dtPagosCliente) {
-                    dtPagosCliente.destroy();
-                    dtPagosCliente = null;
-                }
-
-                $tablaPagosCliente.find('tbody').empty();
-
-                if (rows.length === 0) {
-                    $tablaPagosCliente.find('tbody').html('<tr><td colspan="7" class="text-center text-muted py-4">Sin pagos registrados para este cliente</td></tr>');
-                    return;
-                }
-
-                for (var i = 0; i < rows.length; i++) {
-                    var p = rows[i];
-                    var esAgrupado = !!p.metodos_pago;
-
-                    if (esAgrupado) {
-                        // Venta agrupada
-                        var tieneCredito = p.metodos_pago.indexOf('Credito') !== -1;
-                        var badgeCredito = tieneCredito ? ' <span class="badge bg-warning text-dark ms-1" title="Esta venta incluye crédito"><i class="bi bi-exclamation-triangle"></i> Crédito</span>' : '';
-
-                        var row = '<tr class="fila-pago" data-idventa="' + p.idVenta + '" style="cursor:pointer;">' +
-                            '<td><span class="fw-bold">#' + p.idVenta + '</span>' + badgeCredito + '</td>' +
-                            '<td>' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
-                            '<td>' + badgesMetodosPago(p.metodos_pago) + '</td>' +
-                            '<td class="text-end fw-bold">' + formatoMoneda(p.total_usd, 'USD') + '</td>' +
-                            '<td>' + badgeEstadoCredito(p.credito_pagado, p.metodos_pago) + '</td>' +
-                            '<td><span class="text-muted">—</span></td>' +
-                            '<td>' + p.vendedor + '</td>' +
-                            '</tr>';
-                        $tablaPagosCliente.find('tbody').append(row);
-                    } else {
-                        // Abono individual
-                        var row = '<tr class="fila-abono" style="cursor:default;">' +
-                            '<td><span class="badge bg-info">Abono a crédito</span> <small class="text-muted">' + formatoFecha(p.fecha) + '</small></td>' +
-                            '<td>' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
-                            '<td>' + badgeTipoPago(p.tipoPago) + '</td>' +
-                            '<td class="text-end fw-bold">' + formatoMoneda(p.monto_recibido, p.moneda) + '</td>' +
-                            '<td><span class="text-muted">—</span></td>' +
-                            '<td>' + (p.referencia || '<span class="text-muted">—</span>') + '</td>' +
-                            '<td>' + p.vendedor + '</td>' +
-                            '</tr>';
-                        $tablaPagosCliente.find('tbody').append(row);
-                    }
-                }
-
-                dtPagosCliente = $tablaPagosCliente.DataTable({
-                    order: [[1, 'desc'], [0, 'desc']],
-                    pageLength: 25,
-                    responsive: true
-                });
-
-                $('html, body').animate({ scrollTop: $('#card-pagos-cliente').offset().top - 80 }, 400);
+                renderPagosCliente(res.data || []);
             });
     });
+
+    function renderPagosCliente(rows) {
+        if (dtPagosCliente) {
+            dtPagosCliente.destroy();
+            dtPagosCliente = null;
+        }
+
+        $tablaPagosCliente.find('tbody').empty();
+
+        if (rows.length === 0) {
+            $tablaPagosCliente.find('tbody').html('<tr><td colspan="7" class="text-center text-muted py-4">Sin pagos registrados para este cliente</td></tr>');
+            return;
+        }
+
+        var filaHtml = '';
+
+        for (var i = 0; i < rows.length; i++) {
+            var p = rows[i];
+            var esAgrupado = !!p.metodos_pago;
+
+            if (esAgrupado) {
+                var tieneCredito = p.metodos_pago.indexOf('Credito') !== -1;
+                var badgeCredito = tieneCredito ? ' <span class="badge bg-warning text-dark ms-1" title="Esta venta incluye crédito"><i class="bi bi-exclamation-triangle"></i> Crédito</span>' : '';
+                filaHtml += '<tr class="fila-pago" data-idventa="' + p.idVenta + '" style="cursor:pointer;">' +
+                    '<td><span class="fw-bold">#' + p.idVenta + '</span>' + badgeCredito + '</td>' +
+                    '<td>' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
+                    '<td>' + badgesMetodosPago(p.metodos_pago) + '</td>' +
+                    '<td class="text-end fw-bold">' + formatoMoneda(p.total_bcv, 'USD') + '</td>' +
+                    '<td>' + badgeEstadoCredito(p.credito_pagado, p.metodos_pago) + '</td>' +
+                    '<td><span class="text-muted">—</span></td>' +
+                    '<td>' + p.vendedor + '</td>' +
+                    '</tr>';
+            } else {
+                filaHtml += '<tr class="fila-abono" style="cursor:default;">' +
+                    '<td><span class="badge bg-info">Abono a crédito</span> <small class="text-muted">' + formatoFecha(p.fecha) + '</small></td>' +
+                    '<td>' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
+                    '<td>' + badgeTipoPago(p.tipoPago) + '</td>' +
+                    '<td class="text-end fw-bold">' + formatoMoneda(p.monto_bcv, 'USD') + '</td>' +
+                    '<td><span class="text-muted">—</span></td>' +
+                    '<td>' + (p.referencia || '<span class="text-muted">—</span>') + '</td>' +
+                    '<td>' + p.vendedor + '</td>' +
+                    '</tr>';
+            }
+        }
+
+        $tablaPagosCliente.find('tbody').append(filaHtml);
+
+        dtPagosCliente = $tablaPagosCliente.DataTable({
+            order: [[1, 'desc'], [0, 'desc']],
+            pageLength: 25,
+            responsive: true
+        });
+
+        $('html, body').animate({ scrollTop: $('#card-pagos-cliente').offset().top - 80 }, 400);
+    }
 
     $tablaPagosCliente.on('click', 'tr.fila-pago', function () {
         var idVenta = $(this).data('idventa');
@@ -424,6 +427,7 @@ $(function () {
             dtPagosCliente = null;
         }
         $('#credito-saldo-actual').hide();
+        cedulaClienteExpandida = null;
         $tablaPagosCliente.find('tbody').html('<tr><td colspan="7" class="text-center text-muted py-4">Sin pagos registrados</td></tr>');
         $('#nombre-cliente-credito').text('');
     });
@@ -515,17 +519,31 @@ $(function () {
                 $lista.html(html);
             });
 
-        $('#abono-metodo-pago').html('<option value="">Seleccione método...</option>');
+        $('#abono-metodo-group').empty();
         Ajax.post(window.ROUTES.reportes_pagos_tipos)
             .done(function (res) {
                 if (!res.ok) return;
                 var tipos = res.data || [];
+                var colores = {
+                    'Efectivo': 'success',
+                    'Transferencia': 'info',
+                    'Punto': 'primary',
+                    'Biopago': 'dark',
+                    'Zelle': 'secondary',
+                    'Binance USDT': 'warning'
+                };
                 for (var i = 0; i < tipos.length; i++) {
                     if (tipos[i].tipoPago === 'Credito') continue;
-                    $('#abono-metodo-pago').append(
-                        '<option value="' + tipos[i].idtipo_de_pagos + '">' + tipos[i].tipoPago + '</option>'
-                    );
+                    var color = colores[tipos[i].tipoPago] || 'outline-secondary';
+                    var $input = $('<input type="radio" class="btn-check" name="abono-metodo" ' +
+                        'id="abono-m-' + tipos[i].idtipo_de_pagos + '" ' +
+                        'value="' + tipos[i].idtipo_de_pagos + '" autocomplete="off">');
+                    var $label = $('<label class="btn btn-outline-' + color + '" ' +
+                        'for="abono-m-' + tipos[i].idtipo_de_pagos + '">' +
+                        tipos[i].tipoPago + '</label>');
+                    $('#abono-metodo-group').append($input).append($label);
                 }
+                filtrarMetodosPago();
             });
 
         modalAbono.show();
@@ -542,6 +560,35 @@ $(function () {
         e.stopPropagation();
         abrirModalAbono($(this), 'pagarTodo');
     });
+
+    function filtrarMetodosPago() {
+        var moneda = $('input[name="abono-moneda"]:checked').val();
+        if (moneda === 'USD') {
+            $('#abono-metodo-group input').each(function () {
+                var tipo = $('label[for="' + this.id + '"]').text();
+                if (tipo === 'Efectivo' || tipo === 'Zelle' || tipo === 'Binance USDT') {
+                    $(this).prop('disabled', false);
+                    $('label[for="' + this.id + '"]').show();
+                } else {
+                    $(this).prop('checked', false);
+                    $(this).prop('disabled', true);
+                    $('label[for="' + this.id + '"]').hide();
+                }
+            });
+        } else {
+            $('#abono-metodo-group input').each(function () {
+                var tipo = $('label[for="' + this.id + '"]').text();
+                if (tipo === 'Zelle' || tipo === 'Binance USDT') {
+                    $(this).prop('checked', false);
+                    $(this).prop('disabled', true);
+                    $('label[for="' + this.id + '"]').hide();
+                } else {
+                    $(this).prop('disabled', false);
+                    $('label[for="' + this.id + '"]').show();
+                }
+            });
+        }
+    }
 
     // Toggle moneda en modal de abono
     $('input[name="abono-moneda"]').on('change', function () {
@@ -563,6 +610,7 @@ $(function () {
         }
 
         actualizarMaxAbono();
+        filtrarMetodosPago();
     });
 
     function actualizarMaxAbono() {
@@ -604,15 +652,28 @@ $(function () {
         $('#abono-restante-ves').text(formatoMoneda(restanteVes, 'VES'));
     }
 
-    // Cálculo en tiempo real del restante
+    // Cálculo en tiempo real del restante con validación visual
     $('#abono-monto').on('input', function () {
-        actualizarRestante();
+        var monto = parseFloat($(this).val()) || 0;
+        var max = parseFloat($(this).attr('max')) || 0;
+        var moneda = $('input[name="abono-moneda"]:checked').val();
+
+        if (monto > max && max > 0) {
+            $(this).addClass('is-invalid');
+            $('#abono-max-hint').removeClass('text-muted').addClass('text-danger fw-bold')
+                .text('¡Monto excedido! Máximo: ' + formatoMoneda(max, moneda));
+        } else {
+            $(this).removeClass('is-invalid');
+            $('#abono-max-hint').removeClass('text-danger fw-bold').addClass('text-muted')
+                .text('Máximo disponible: ' + formatoMoneda(max, moneda));
+            actualizarRestante();
+        }
     });
 
     // Confirmar abono
     $('#btn-confirmar-abono').on('click', function () {
         var cedula = $('#abono-cedula').val();
-        var idTipoPago = parseInt($('#abono-metodo-pago').val()) || 0;
+        var idTipoPago = parseInt($('input[name="abono-metodo"]:checked').val()) || 0;
         var moneda = $('input[name="abono-moneda"]:checked').val();
         var monto = parseFloat($('#abono-monto').val()) || 0;
         var referencia = $('#abono-referencia').val().trim();
@@ -649,7 +710,7 @@ $(function () {
         Swal.fire({
             title: abonoModo === 'pagarTodo' ? '¿Confirmar pago total?' : '¿Confirmar abono?',
             html: 'Se registrará un pago de <b>' + formatoMoneda(monto, moneda) + '</b><br>' +
-                  'Método: <b>' + $('#abono-metodo-pago option:selected').text() + '</b>',
+                  'Método: <b>' + $('label[for="abono-m-' + idTipoPago + '"]').text() + '</b>',
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: abonoModo === 'pagarTodo' ? 'Sí, registrar pago total' : 'Sí, registrar abono',
@@ -676,6 +737,37 @@ $(function () {
                         showConfirmButton: false
                     });
                     cargarCreditos();
+
+                    // Refrescar historial principal con filtros actuales
+                    cargarHistorial({
+                        fecha_inicio: $('#fecha-inicio').val(),
+                        fecha_fin: $('#fecha-fin').val(),
+                        metodo_pago: $('#metodo-pago').val(),
+                        cedula_cliente: $('#select-cliente').val()
+                    });
+
+                    // Refrescar detalle del cliente si está expandido
+                    if (cedulaClienteExpandida && !$('#card-pagos-cliente').hasClass('d-none')) {
+                        Ajax.post(window.ROUTES.reportes_pagos_cliente_detalle, { cedula: cedulaClienteExpandida })
+                            .done(function (detRes) {
+                                if (!detRes.ok) return;
+                                renderPagosCliente(detRes.data || []);
+                            });
+
+                        Ajax.post(window.ROUTES.reportes_pagos_saldo_credito, { cedula: cedulaClienteExpandida })
+                            .done(function (saldoRes) {
+                                if (saldoRes.ok && saldoRes.data) {
+                                    var s = saldoRes.data;
+                                    $('#credito-badge-usd').text('USD: ' + formatoMoneda(s.saldo_deudor_usd, 'USD'));
+                                    $('#credito-badge-bcv').text('BCV: ' + formatoMoneda(s.saldo_deudor_bcv, 'USD'));
+                                    if (s.saldo_deudor_bcv > 0) {
+                                        $('#credito-saldo-actual').show();
+                                    } else {
+                                        $('#credito-saldo-actual').hide();
+                                    }
+                                }
+                            });
+                    }
                 } else {
                     Swal.fire('Error', res.mensaje, 'error');
                 }
@@ -687,7 +779,7 @@ $(function () {
     document.getElementById('modal-abonar-credito').addEventListener('hidden.bs.modal', function () {
         $('#abono-monto').val('');
         $('#abono-referencia').val('');
-        $('#abono-metodo-pago').val('');
+        $('input[name="abono-metodo"]').prop('checked', false);
         abonoModo = 'abonar';
     });
 

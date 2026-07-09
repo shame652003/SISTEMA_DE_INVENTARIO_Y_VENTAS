@@ -284,7 +284,7 @@ CREATE TABLE tipo_de_pagos (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 INSERT INTO tipo_de_pagos (tipoPago, status)
-VALUES ('Efectivo', 1), ('Transferencia', 1), ('Punto', 1), ('Biopago', 1), ('Credito', 1), ('Zelle', 1);
+VALUES ('Efectivo', 1), ('Transferencia', 1), ('Punto', 1), ('Biopago', 1), ('Credito', 1), ('Zelle', 1), ('Binance USDT', 1);
 
 CREATE TABLE pagos (
     idPago INT AUTO_INCREMENT PRIMARY KEY,

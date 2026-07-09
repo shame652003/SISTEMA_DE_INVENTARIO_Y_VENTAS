@@ -56,6 +56,7 @@
                                 <option value="Biopago">Biopago</option>
                                 <option value="Credito">Crédito</option>
                                 <option value="Zelle">Zelle</option>
+                                <option value="Binance USDT">Binance USDT</option>
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -87,7 +88,7 @@
                                     <th>Fecha</th>
                                     <th>Cliente</th>
                                     <th>Métodos de Pago</th>
-                                    <th class="text-end">Total Venta</th>
+                                    <th class="text-end">Total BCV</th>
                                     <th>Estado Crédito</th>
                                     <th>Vendedor</th>
                                 </tr>
@@ -155,7 +156,7 @@
                                     <th># Venta</th>
                                     <th>Fecha</th>
                                     <th>Métodos</th>
-                                    <th class="text-end">Total</th>
+                                    <th class="text-end">Total BCV</th>
                                     <th>Estado Crédito</th>
                                     <th>Referencia</th>
                                     <th>Vendedor</th>
@@ -211,10 +212,9 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="abono-metodo-pago" class="form-label">Método de Pago <span class="text-danger">*</span></label>
-                    <select class="form-select" id="abono-metodo-pago" required>
-                        <option value="">Seleccione método...</option>
-                    </select>
+                    <label class="form-label">Método de Pago <span class="text-danger">*</span></label>
+                    <div class="btn-group flex-wrap w-100" role="group" id="abono-metodo-group">
+                    </div>
                 </div>
 
                 <div class="mb-3">
