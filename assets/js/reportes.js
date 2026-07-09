@@ -57,6 +57,23 @@ $(function () {
         return '<span class="badge bg-' + color + '">' + tipo + '</span>';
     }
 
+    function badgesMetodosPago(metodosStr) {
+        if (!metodosStr) return '<span class="text-muted">—</span>';
+        var metodos = metodosStr.split(', ');
+        var html = '';
+        for (var i = 0; i < metodos.length; i++) {
+            html += badgeTipoPago(metodos[i]) + ' ';
+        }
+        return html;
+    }
+
+    function badgeEstadoCredito(creditoPagado, metodosPago) {
+        if (!metodosPago || metodosPago.indexOf('Credito') === -1) return '<span class="text-muted">—</span>';
+        if (creditoPagado === 1) return '<span class="badge bg-success">Pagado</span>';
+        if (creditoPagado === 0) return '<span class="badge bg-danger">Pendiente</span>';
+        return '<span class="text-muted">—</span>';
+    }
+
     function llenarModalDetalle(res) {
         if (!res.ok) return;
         var d = res.data;
@@ -186,7 +203,7 @@ $(function () {
                 $tablaHistorial.find('tbody').empty();
 
                 if (rows.length === 0) {
-                    $tablaHistorial.find('tbody').html('<tr><td colspan="8" class="text-center text-muted py-4">No se encontraron pagos en el rango seleccionado</td></tr>');
+                    $tablaHistorial.find('tbody').html('<tr><td colspan="7" class="text-center text-muted py-4">No se encontraron pagos en el rango seleccionado</td></tr>');
                     $('#contador-pagos').hide();
                     return;
                 }
@@ -197,10 +214,9 @@ $(function () {
                         '<td><span class="fw-bold">#' + p.idVenta + '</span></td>' +
                         '<td>' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
                         '<td>' + p.cliente + ' <small class="text-muted">(' + p.cedula_cliente + ')</small></td>' +
-                        '<td>' + badgeTipoPago(p.tipoPago) + '</td>' +
-                        '<td>' + p.moneda + '</td>' +
-                        '<td class="text-end fw-bold">' + formatoMoneda(p.monto_recibido, p.moneda) + '</td>' +
-                        '<td>' + (p.referencia || '<span class="text-muted">—</span>') + '</td>' +
+                        '<td>' + badgesMetodosPago(p.metodos_pago) + '</td>' +
+                        '<td class="text-end fw-bold">' + formatoMoneda(p.total_usd, 'USD') + '</td>' +
+                        '<td>' + badgeEstadoCredito(p.credito_pagado, p.metodos_pago) + '</td>' +
                         '<td>' + p.vendedor + '</td>' +
                         '</tr>';
                     $tablaHistorial.find('tbody').append(row);
@@ -211,11 +227,11 @@ $(function () {
                     pageLength: 25,
                     responsive: true,
                     columnDefs: [
-                        { orderable: false, targets: [3, 6] }
+                        { orderable: false, targets: [3, 5] }
                     ]
                 });
 
-                $('#contador-pagos').text(rows.length + ' pagos encontrados').show();
+                $('#contador-pagos').text(rows.length + ' ventas encontradas').show();
             });
     }
 
@@ -320,6 +336,18 @@ $(function () {
 
         $('#nombre-cliente-credito').text(nombre + ' (C.I. ' + cedula + ')');
         $('#card-pagos-cliente').removeClass('d-none');
+        $('#credito-saldo-actual').hide();
+
+        // Cargar saldo actual de crédito
+        Ajax.post(window.ROUTES.reportes_pagos_saldo_credito, { cedula: cedula })
+            .done(function (saldoRes) {
+                if (saldoRes.ok && saldoRes.data) {
+                    var s = saldoRes.data;
+                    $('#credito-badge-usd').text('USD: ' + formatoMoneda(s.saldo_deudor_usd, 'USD'));
+                    $('#credito-badge-bcv').text('BCV: ' + formatoMoneda(s.saldo_deudor_bcv, 'USD'));
+                    $('#credito-saldo-actual').show();
+                }
+            });
 
         Ajax.post(window.ROUTES.reportes_pagos_cliente_detalle, { cedula: cedula })
             .done(function (res) {
@@ -341,16 +369,36 @@ $(function () {
 
                 for (var i = 0; i < rows.length; i++) {
                     var p = rows[i];
-                    var row = '<tr class="fila-pago" data-idventa="' + p.idVenta + '" style="cursor:pointer;">' +
-                        '<td>' + (p.idVenta ? '<span class="fw-bold">#' + p.idVenta + '</span>' : '<span class="badge bg-info">Abono</span>') + '</td>' +
-                        '<td>' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
-                        '<td>' + badgeTipoPago(p.tipoPago) + '</td>' +
-                        '<td>' + p.moneda + '</td>' +
-                        '<td class="text-end fw-bold">' + formatoMoneda(p.monto_recibido, p.moneda) + '</td>' +
-                        '<td>' + (p.referencia || '<span class="text-muted">—</span>') + '</td>' +
-                        '<td>' + p.vendedor + '</td>' +
-                        '</tr>';
-                    $tablaPagosCliente.find('tbody').append(row);
+                    var esAgrupado = !!p.metodos_pago;
+
+                    if (esAgrupado) {
+                        // Venta agrupada
+                        var tieneCredito = p.metodos_pago.indexOf('Credito') !== -1;
+                        var badgeCredito = tieneCredito ? ' <span class="badge bg-warning text-dark ms-1" title="Esta venta incluye crédito"><i class="bi bi-exclamation-triangle"></i> Crédito</span>' : '';
+
+                        var row = '<tr class="fila-pago" data-idventa="' + p.idVenta + '" style="cursor:pointer;">' +
+                            '<td><span class="fw-bold">#' + p.idVenta + '</span>' + badgeCredito + '</td>' +
+                            '<td>' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
+                            '<td>' + badgesMetodosPago(p.metodos_pago) + '</td>' +
+                            '<td class="text-end fw-bold">' + formatoMoneda(p.total_usd, 'USD') + '</td>' +
+                            '<td>' + badgeEstadoCredito(p.credito_pagado, p.metodos_pago) + '</td>' +
+                            '<td><span class="text-muted">—</span></td>' +
+                            '<td>' + p.vendedor + '</td>' +
+                            '</tr>';
+                        $tablaPagosCliente.find('tbody').append(row);
+                    } else {
+                        // Abono individual
+                        var row = '<tr class="fila-abono" style="cursor:default;">' +
+                            '<td><span class="badge bg-info">Abono a crédito</span> <small class="text-muted">' + formatoFecha(p.fecha) + '</small></td>' +
+                            '<td>' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
+                            '<td>' + badgeTipoPago(p.tipoPago) + '</td>' +
+                            '<td class="text-end fw-bold">' + formatoMoneda(p.monto_recibido, p.moneda) + '</td>' +
+                            '<td><span class="text-muted">—</span></td>' +
+                            '<td>' + (p.referencia || '<span class="text-muted">—</span>') + '</td>' +
+                            '<td>' + p.vendedor + '</td>' +
+                            '</tr>';
+                        $tablaPagosCliente.find('tbody').append(row);
+                    }
                 }
 
                 dtPagosCliente = $tablaPagosCliente.DataTable({
@@ -375,6 +423,7 @@ $(function () {
             dtPagosCliente.destroy();
             dtPagosCliente = null;
         }
+        $('#credito-saldo-actual').hide();
         $tablaPagosCliente.find('tbody').html('<tr><td colspan="7" class="text-center text-muted py-4">Sin pagos registrados</td></tr>');
         $('#nombre-cliente-credito').text('');
     });
@@ -443,6 +492,27 @@ $(function () {
                 }
 
                 actualizarMaxAbono();
+            });
+
+        // Cargar créditos pendientes por venta
+        Ajax.post(window.ROUTES.reportes_pagos_creditos_detalle, { cedula: cedula })
+            .done(function (res) {
+                var $lista = $('#abono-creditos-lista').empty();
+                if (!res.ok || !res.data || res.data.length === 0) {
+                    $lista.html('<small class="text-muted">Sin créditos detallados</small>');
+                    return;
+                }
+                var html = '<div class="list-group list-group-flush small">';
+                for (var i = 0; i < res.data.length; i++) {
+                    var c = res.data[i];
+                    html += '<div class="list-group-item py-1 px-2 d-flex justify-content-between align-items-center">' +
+                        '<span><strong>Venta #' + c.idVenta + '</strong> ' +
+                        '<small class="text-muted">' + formatoFecha(c.fecha_venta) + '</small></span>' +
+                        '<span class="text-danger">' + formatoMoneda(c.saldo_pendiente_bcv, 'USD') + '</span>' +
+                        '</div>';
+                }
+                html += '</div>';
+                $lista.html(html);
             });
 
         $('#abono-metodo-pago').html('<option value="">Seleccione método...</option>');

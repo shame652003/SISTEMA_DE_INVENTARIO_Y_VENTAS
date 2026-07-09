@@ -101,6 +101,7 @@ $rutasPorModulo = [
         'reportes_pagos_clientes_buscar' => '/reportes/pagos/clientes/buscar',
         'reportes_pagos_saldo_credito'   => '/reportes/pagos/saldo-credito',
         'reportes_pagos_abonar_credito'  => '/reportes/pagos/abonar-credito',
+        'reportes_pagos_creditos_detalle' => '/reportes/pagos/creditos-detalle',
     ],
     'reportes_generales' => [
         'reportes_generales'        => '/reportes/generales',

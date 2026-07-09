@@ -56,6 +56,22 @@ class Reporte extends Model
         return $this->fetchAll("SELECT * FROM vw_productos_mas_vendidos LIMIT 50");
     }
 
+    public function creditosDetallePendientes(int $cedula): array
+    {
+        return $this->fetchAll(
+            "SELECT cd.idCreditoDetalle, cd.idVenta, cd.monto_credito_usd, cd.monto_credito_bcv,
+                    cd.saldo_pendiente_usd, cd.saldo_pendiente_bcv, cd.fecha_creacion,
+                    v.fecha AS fecha_venta,
+                    CONCAT(c.nombre, ' ', c.apellido) AS cliente
+             FROM creditos_detalle cd
+             INNER JOIN ventas_encabezado v ON v.idVenta = cd.idVenta
+             INNER JOIN cliente c ON c.cedula = cd.cedula_cliente
+             WHERE cd.cedula_cliente = ? AND cd.saldo_pendiente_bcv > 0 AND cd.status = 1
+             ORDER BY cd.fecha_creacion ASC, cd.idCreditoDetalle ASC",
+            [$cedula]
+        );
+    }
+
     public function obtenerSaldoCredito(int $cedula): ?array
     {
         $credito = $this->fetch(
@@ -94,17 +110,19 @@ class Reporte extends Model
 
     public function abonarCredito(int $cedula, array $datos): array
     {
-        $credito = $this->fetch(
-            "SELECT saldo_deudor_usd, saldo_deudor_bcv FROM creditos WHERE cedula_cliente = ?",
+        $pendientes = $this->fetchAll(
+            "SELECT idCreditoDetalle, idVenta, monto_credito_usd, monto_credito_bcv,
+                    saldo_pendiente_usd, saldo_pendiente_bcv
+             FROM creditos_detalle
+             WHERE cedula_cliente = ? AND saldo_pendiente_bcv > 0 AND status = 1
+             ORDER BY fecha_creacion ASC, idCreditoDetalle ASC",
             [$cedula]
         );
 
-        if (!$credito) {
-            return ['ok' => false, 'mensaje' => 'El cliente no tiene crédito registrado.'];
+        if (empty($pendientes)) {
+            return ['ok' => false, 'mensaje' => 'El cliente no tiene créditos pendientes.'];
         }
 
-        $saldoUsd = (float) $credito['saldo_deudor_usd'];
-        $saldoBcv = (float) $credito['saldo_deudor_bcv'];
         $moneda = strtoupper($datos['moneda']);
         $montoRecibido = (float) $datos['monto_recibido'];
         $montoBcv = (float) $datos['monto_bcv'];
@@ -115,39 +133,92 @@ class Reporte extends Model
             return ['ok' => false, 'mensaje' => 'El monto debe ser mayor a cero.'];
         }
 
-        if ($moneda === 'USD' && $montoRecibido > $saldoUsd) {
-            return ['ok' => false, 'mensaje' => 'El monto en USD supera el saldo deudor ($' . number_format($saldoUsd, 2) . ').'];
+        $totalPendienteBcv = 0;
+        $totalPendienteUsd = 0;
+        foreach ($pendientes as $c) {
+            $totalPendienteBcv += (float) $c['saldo_pendiente_bcv'];
+            $totalPendienteUsd += (float) $c['saldo_pendiente_usd'];
         }
 
-        if ($moneda === 'VES' && $montoBcv > $saldoBcv) {
-            return ['ok' => false, 'mensaje' => 'El monto en bolívares supera el saldo deudor BCV ($' . number_format($saldoBcv, 2) . ').'];
+        if ($montoBcv > $totalPendienteBcv + 0.01) {
+            return ['ok' => false, 'mensaje' => 'El monto supera el total pendiente ($' . number_format($totalPendienteBcv, 2) . ' BCV).'];
         }
-
-        $nuevoSaldoUsd = max(0, round($saldoUsd - $montoBcv, 2));
-        $nuevoSaldoBcv = max(0, round($saldoBcv - $montoBcv, 2));
 
         try {
             $this->execute(
-                "INSERT INTO pagos (idVenta, idtipo_de_pagos, moneda, monto_recibido, monto_bcv, referencia)
-                 VALUES (NULL, ?, ?, ?, ?, ?)",
-                [$idTipoPago, $moneda, $montoRecibido, $montoBcv, $referencia]
+                "INSERT INTO pagos (idVenta, cedula_cliente, idtipo_de_pagos, moneda, monto_recibido, monto_bcv, referencia)
+                 VALUES (NULL, ?, ?, ?, ?, ?, ?)",
+                [$cedula, $idTipoPago, $moneda, $montoRecibido, $montoBcv, $referencia !== '' ? $referencia : null]
             );
 
             $idPago = (int) $this->lastInsertId();
 
-            $this->execute(
-                "UPDATE creditos
-                 SET saldo_deudor_usd = ?, saldo_deudor_bcv = ?, ultima_actualizacion = NOW()
-                 WHERE cedula_cliente = ?",
-                [$nuevoSaldoUsd, $nuevoSaldoBcv, $cedula]
+            $restanteBcv = $montoBcv;
+            $ventasPagadas = [];
+
+            foreach ($pendientes as $cred) {
+                if ($restanteBcv <= 0.001) break;
+
+                $saldoBcv = (float) $cred['saldo_pendiente_bcv'];
+                $saldoUsd = (float) $cred['saldo_pendiente_usd'];
+                $aplicadoBcv = min($restanteBcv, $saldoBcv);
+                $ratio = $saldoBcv > 0 ? ($aplicadoBcv / $saldoBcv) : 0;
+                $aplicadoUsd = round($saldoUsd * $ratio, 2);
+
+                $this->execute(
+                    "INSERT INTO abonos_aplicados (idPago, idCreditoDetalle, monto_aplicado_usd, monto_aplicado_bcv)
+                     VALUES (?, ?, ?, ?)",
+                    [$idPago, $cred['idCreditoDetalle'], $aplicadoUsd, $aplicadoBcv]
+                );
+
+                $nuevoSaldoUsd = max(0, round($saldoUsd - $aplicadoUsd, 2));
+                $nuevoSaldoBcv = max(0, round($saldoBcv - $aplicadoBcv, 2));
+
+                $this->execute(
+                    "UPDATE creditos_detalle SET saldo_pendiente_usd = ?, saldo_pendiente_bcv = ?
+                     WHERE idCreditoDetalle = ?",
+                    [$nuevoSaldoUsd, $nuevoSaldoBcv, $cred['idCreditoDetalle']]
+                );
+
+                $restanteBcv -= $aplicadoBcv;
+
+                if ($nuevoSaldoBcv < 0.01) {
+                    $ventasPagadas[] = (int) $cred['idVenta'];
+                }
+            }
+
+            $totales = $this->fetch(
+                "SELECT COALESCE(SUM(saldo_pendiente_usd), 0) AS total_usd,
+                        COALESCE(SUM(saldo_pendiente_bcv), 0) AS total_bcv
+                 FROM creditos_detalle WHERE cedula_cliente = ? AND status = 1",
+                [$cedula]
             );
+
+            $nuevoTotalUsd = (float) $totales['total_usd'];
+            $nuevoTotalBcv = (float) $totales['total_bcv'];
+
+            if ($nuevoTotalBcv > 0) {
+                $this->execute(
+                    "UPDATE creditos SET saldo_deudor_usd = ?, saldo_deudor_bcv = ?, ultima_actualizacion = NOW()
+                     WHERE cedula_cliente = ?",
+                    [$nuevoTotalUsd, $nuevoTotalBcv, $cedula]
+                );
+            } else {
+                $this->execute("DELETE FROM creditos WHERE cedula_cliente = ?", [$cedula]);
+            }
+
+            $mensaje = 'Abono #' . $idPago . ' registrado correctamente.';
+            if (!empty($ventasPagadas)) {
+                $mensaje .= ' Ventas liquidadas: #' . implode(', #', $ventasPagadas) . '.';
+            }
 
             return [
                 'ok' => true,
-                'mensaje' => 'Abono #' . $idPago . ' registrado correctamente.',
-                'saldo_deudor_usd' => $nuevoSaldoUsd,
-                'saldo_deudor_bcv' => $nuevoSaldoBcv,
+                'mensaje' => $mensaje,
+                'saldo_deudor_usd' => $nuevoTotalUsd,
+                'saldo_deudor_bcv' => $nuevoTotalBcv,
                 'idPago' => $idPago,
+                'ventas_pagadas' => $ventasPagadas,
             ];
         } catch (\Exception $e) {
             return ['ok' => false, 'mensaje' => 'Error al registrar el abono: ' . $e->getMessage()];
@@ -156,11 +227,24 @@ class Reporte extends Model
 
     public function pagosDetalle(string $inicio, string $fin, string $metodo = '', int $cedulaCliente = 0): array
     {
-        $sql = "SELECT p.idPago, p.idVenta, DATE(p.fecha_pago) AS fecha, TIME(p.fecha_pago) AS hora,
-                       tp.tipoPago, p.moneda, p.monto_recibido, p.monto_bcv, p.referencia,
-                       v.idVenta, CONCAT(c.nombre, ' ', c.apellido) AS cliente, c.cedula AS cedula_cliente,
+        $sql = "SELECT p.idVenta, v.fecha, v.hora,
+                       v.total_usd, v.total_ves, v.total_bcv,
+                       CONCAT(c.nombre, ' ', c.apellido) AS cliente, c.cedula AS cedula_cliente,
                        CONCAT(u.nombre, ' ', u.apellido) AS vendedor,
-                       v.total_usd, v.total_ves, v.total_bcv
+                       GROUP_CONCAT(DISTINCT tp.tipoPago ORDER BY tp.tipoPago SEPARATOR ', ') AS metodos_pago,
+                       GROUP_CONCAT(DISTINCT p.moneda ORDER BY p.moneda SEPARATOR ', ') AS monedas,
+                       COALESCE(
+                           (SELECT CASE WHEN cd.saldo_pendiente_bcv > 0 THEN 0 ELSE 1 END
+                            FROM creditos_detalle cd
+                            WHERE cd.idVenta = p.idVenta AND cd.status = 1
+                            LIMIT 1), NULL
+                       ) AS credito_pagado,
+                       COALESCE(
+                           (SELECT cd.saldo_pendiente_bcv
+                            FROM creditos_detalle cd
+                            WHERE cd.idVenta = p.idVenta AND cd.status = 1
+                            LIMIT 1), NULL
+                       ) AS credito_pendiente_bcv
                 FROM pagos p
                 INNER JOIN ventas_encabezado v ON v.idVenta = p.idVenta AND v.status = 1
                 INNER JOIN cliente c ON c.cedula = v.cedula_cliente
@@ -170,7 +254,11 @@ class Reporte extends Model
         $params = [$inicio, $fin];
 
         if ($metodo !== '') {
-            $sql .= " AND tp.tipoPago = ?";
+            $sql .= " AND EXISTS (
+                SELECT 1 FROM pagos p2
+                INNER JOIN tipo_de_pagos tp2 ON tp2.idtipo_de_pagos = p2.idtipo_de_pagos
+                WHERE p2.idVenta = p.idVenta AND tp2.tipoPago = ?
+            )";
             $params[] = $metodo;
         }
 
@@ -179,7 +267,7 @@ class Reporte extends Model
             $params[] = $cedulaCliente;
         }
 
-        $sql .= " ORDER BY p.fecha_pago DESC, p.idPago DESC";
+        $sql .= " GROUP BY p.idVenta ORDER BY v.fecha DESC, p.idVenta DESC";
         return $this->fetchAll($sql, $params);
     }
 
@@ -191,18 +279,32 @@ class Reporte extends Model
     public function pagosPorCliente(int $cedula): array
     {
         $ventas = $this->fetchAll(
-            "SELECT p.idPago, p.idVenta, DATE(p.fecha_pago) AS fecha, TIME(p.fecha_pago) AS hora,
-                    tp.tipoPago, p.moneda, p.monto_recibido, p.monto_bcv, p.referencia,
+            "SELECT p.idVenta, v.fecha, v.hora,
                     v.total_usd, v.total_ves, v.total_bcv,
                     CONCAT(c.nombre, ' ', c.apellido) AS cliente, c.cedula AS cedula_cliente,
-                    CONCAT(u.nombre, ' ', u.apellido) AS vendedor
+                    CONCAT(u.nombre, ' ', u.apellido) AS vendedor,
+                    GROUP_CONCAT(DISTINCT tp.tipoPago ORDER BY tp.tipoPago SEPARATOR ', ') AS metodos_pago,
+                    GROUP_CONCAT(DISTINCT p.moneda ORDER BY p.moneda SEPARATOR ', ') AS monedas,
+                    COALESCE(
+                        (SELECT CASE WHEN cd.saldo_pendiente_bcv > 0 THEN 0 ELSE 1 END
+                         FROM creditos_detalle cd
+                         WHERE cd.idVenta = p.idVenta AND cd.status = 1
+                         LIMIT 1), NULL
+                    ) AS credito_pagado,
+                    COALESCE(
+                        (SELECT cd.saldo_pendiente_bcv
+                         FROM creditos_detalle cd
+                         WHERE cd.idVenta = p.idVenta AND cd.status = 1
+                         LIMIT 1), NULL
+                    ) AS credito_pendiente_bcv
              FROM pagos p
              INNER JOIN ventas_encabezado v ON v.idVenta = p.idVenta AND v.status = 1
              INNER JOIN cliente c ON c.cedula = v.cedula_cliente
              INNER JOIN usuario u ON u.cedula = v.cedula_usuario
              INNER JOIN tipo_de_pagos tp ON tp.idtipo_de_pagos = p.idtipo_de_pagos
              WHERE v.cedula_cliente = ?
-             ORDER BY p.fecha_pago DESC, p.idPago DESC",
+             GROUP BY p.idVenta
+             ORDER BY v.fecha DESC, p.idVenta DESC",
             [$cedula]
         );
 
@@ -213,10 +315,9 @@ class Reporte extends Model
                     CONCAT(c.nombre, ' ', c.apellido) AS cliente, c.cedula AS cedula_cliente,
                     'Sistema' AS vendedor
              FROM pagos p
-             INNER JOIN creditos cr ON cr.cedula_cliente = ?
-             INNER JOIN cliente c ON c.cedula = cr.cedula_cliente
+             INNER JOIN cliente c ON c.cedula = p.cedula_cliente
              INNER JOIN tipo_de_pagos tp ON tp.idtipo_de_pagos = p.idtipo_de_pagos
-             WHERE p.idVenta IS NULL
+             WHERE p.idVenta IS NULL AND p.cedula_cliente = ?
              ORDER BY p.fecha_pago DESC, p.idPago DESC",
             [$cedula]
         );

@@ -86,16 +86,15 @@
                                     <th># Venta</th>
                                     <th>Fecha</th>
                                     <th>Cliente</th>
-                                    <th>Tipo Pago</th>
-                                    <th>Moneda</th>
-                                    <th class="text-end">Monto</th>
-                                    <th>Referencia</th>
+                                    <th>Métodos de Pago</th>
+                                    <th class="text-end">Total Venta</th>
+                                    <th>Estado Crédito</th>
                                     <th>Vendedor</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">Seleccione un rango de fechas y genere el reporte</td>
+                                    <td colspan="7" class="text-center text-muted py-4">Seleccione un rango de fechas y genere el reporte</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -137,7 +136,13 @@
 
             <div class="card mt-4 d-none" id="card-pagos-cliente">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historial de Pagos — <span id="nombre-cliente-credito" class="fw-bold"></span></h5>
+                    <div>
+                        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historial de Pagos — <span id="nombre-cliente-credito" class="fw-bold"></span></h5>
+                        <div class="mt-1" id="credito-saldo-actual" style="display:none;">
+                            <span class="badge bg-warning text-dark me-2 fs-6" id="credito-badge-usd">USD: $0.00</span>
+                            <span class="badge bg-secondary fs-6" id="credito-badge-bcv">BCV: $0.00</span>
+                        </div>
+                    </div>
                     <button class="btn btn-sm btn-outline-secondary" id="btn-cerrar-cliente-detalle">
                         <i class="bi bi-x-lg me-1"></i> Cerrar
                     </button>
@@ -149,9 +154,9 @@
                                 <tr>
                                     <th># Venta</th>
                                     <th>Fecha</th>
-                                    <th>Tipo Pago</th>
-                                    <th>Moneda</th>
-                                    <th class="text-end">Monto</th>
+                                    <th>Métodos</th>
+                                    <th class="text-end">Total</th>
+                                    <th>Estado Crédito</th>
                                     <th>Referencia</th>
                                     <th>Vendedor</th>
                                 </tr>
@@ -186,12 +191,16 @@
                             <small class="text-muted d-block">Cliente</small>
                             <strong id="abono-cliente-nombre">-</strong>
                         </div>
+                        <div class="col-12 mt-2">
+                            <small class="text-muted d-block">Créditos pendientes por venta (FIFO)</small>
+                            <div id="abono-creditos-lista" class="mt-1"></div>
+                        </div>
                         <div class="col-md-4">
-                            <small class="text-muted d-block">Deuda USD</small>
+                            <small class="text-muted d-block">Deuda Total USD</small>
                             <strong class="text-danger" id="abono-deuda-usd">$0.00</strong>
                         </div>
                         <div class="col-md-4">
-                            <small class="text-muted d-block">Deuda BCV</small>
+                            <small class="text-muted d-block">Deuda Total BCV</small>
                             <strong class="text-danger" id="abono-deuda-bcv">$0.00</strong>
                         </div>
                         <div class="col-md-4">

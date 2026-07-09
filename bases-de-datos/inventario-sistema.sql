@@ -2,8 +2,8 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
-CREATE DATABASE IF NOT EXISTS prueba CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE prueba;
+CREATE DATABASE IF NOT EXISTS sistemainventario CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE sistemainventario;
 
 -- ==========================================
 -- 1. MODULO DE SEGURIDAD Y ROLES
@@ -46,6 +46,23 @@ CREATE TABLE bitacora (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cedula INT NOT NULL,
+    token_hash VARCHAR(255) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_token_hash (token_hash),
+    INDEX idx_cedula (cedula),
+    INDEX idx_expires (expires_at),
+    CONSTRAINT fk_refresh_usuario FOREIGN KEY (cedula) REFERENCES usuario(cedula) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO usuario (cedula, nombre, apellido, correo, telefono, clave, idRol, status)
+VALUES (12345678, 'Admin', 'Sistema', 'admin@sistema.com', '04120000000',
+       '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1, 1);
+
 -- ==========================================
 -- 2. CONFIGURACION DE PRECIOS
 -- ==========================================
@@ -73,7 +90,7 @@ CREATE TABLE margen_ganancia (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 INSERT INTO bcv_tasas (fecha_tasa, tasa_ves_por_usd, observacion)
-VALUES (CURRENT_DATE, 526.0000, 'Tasa inicial BCV');
+VALUES (CURRENT_DATE, 700.0000, 'Tasa inicial BCV');
 
 INSERT INTO margen_ganancia (tipo_precio, porcentaje, observacion)
 VALUES
@@ -272,6 +289,7 @@ VALUES ('Efectivo', 1), ('Transferencia', 1), ('Punto', 1), ('Biopago', 1), ('Cr
 CREATE TABLE pagos (
     idPago INT AUTO_INCREMENT PRIMARY KEY,
     idVenta INT NULL,
+    cedula_cliente INT NULL,
     idtipo_de_pagos INT NOT NULL,
     moneda ENUM('USD', 'VES') NOT NULL,
     monto_recibido DECIMAL(14,2) NOT NULL,
@@ -279,6 +297,8 @@ CREATE TABLE pagos (
     referencia VARCHAR(100) NULL,
     fecha_pago DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_pago_venta FOREIGN KEY (idVenta) REFERENCES ventas_encabezado(idVenta)
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_pago_cliente FOREIGN KEY (cedula_cliente) REFERENCES cliente(cedula)
         ON UPDATE CASCADE,
     CONSTRAINT fk_pago_tipo FOREIGN KEY (idtipo_de_pagos) REFERENCES tipo_de_pagos(idtipo_de_pagos)
         ON UPDATE CASCADE,
@@ -295,6 +315,37 @@ CREATE TABLE creditos (
         ON UPDATE CASCADE,
     CHECK (saldo_deudor_usd >= 0),
     CHECK (saldo_deudor_bcv >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE creditos_detalle (
+    idCreditoDetalle INT AUTO_INCREMENT PRIMARY KEY,
+    idVenta INT NOT NULL,
+    cedula_cliente INT NOT NULL,
+    monto_credito_usd DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    monto_credito_bcv DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    saldo_pendiente_usd DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    saldo_pendiente_bcv DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status TINYINT(1) NOT NULL DEFAULT 1,
+    CONSTRAINT fk_cd_venta FOREIGN KEY (idVenta) REFERENCES ventas_encabezado(idVenta)
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_cd_cliente FOREIGN KEY (cedula_cliente) REFERENCES cliente(cedula)
+        ON UPDATE CASCADE,
+    CHECK (monto_credito_usd >= 0),
+    CHECK (saldo_pendiente_usd >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE abonos_aplicados (
+    idAbonoAplicado INT AUTO_INCREMENT PRIMARY KEY,
+    idPago INT NOT NULL,
+    idCreditoDetalle INT NOT NULL,
+    monto_aplicado_usd DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    monto_aplicado_bcv DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    CONSTRAINT fk_aa_pago FOREIGN KEY (idPago) REFERENCES pagos(idPago)
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_aa_cd FOREIGN KEY (idCreditoDetalle) REFERENCES creditos_detalle(idCreditoDetalle)
+        ON UPDATE CASCADE,
+    CHECK (monto_aplicado_usd >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ==========================================
@@ -320,6 +371,10 @@ CREATE INDEX idx_detalle_venta_producto ON ventas_detalle (idproducto);
 CREATE INDEX idx_pago_fecha_tipo ON pagos (fecha_pago, idtipo_de_pagos);
 CREATE INDEX idx_pago_venta_moneda ON pagos (idVenta, moneda);
 CREATE INDEX idx_pago_moneda_fecha ON pagos (moneda, fecha_pago);
+CREATE INDEX idx_cd_cliente_status ON creditos_detalle (cedula_cliente, status, saldo_pendiente_bcv);
+CREATE INDEX idx_cd_venta ON creditos_detalle (idVenta);
+CREATE INDEX idx_aa_pago ON abonos_aplicados (idPago);
+CREATE INDEX idx_aa_cd ON abonos_aplicados (idCreditoDetalle);
 
 -- ==========================================
 -- 7. VISTAS DE REPORTES ESTADISTICOS
@@ -560,6 +615,30 @@ WHERE cr.saldo_deudor_bcv > 0;
 -- ALTER TABLE pagos MODIFY COLUMN idVenta INT NULL;
 -- ALTER TABLE pagos DROP FOREIGN KEY fk_pago_venta;
 -- ALTER TABLE pagos ADD CONSTRAINT fk_pago_venta FOREIGN KEY (idVenta) REFERENCES ventas_encabezado(idVenta) ON UPDATE CASCADE;
+-- ALTER TABLE pagos ADD COLUMN cedula_cliente INT NULL AFTER idVenta;
+-- ALTER TABLE pagos ADD INDEX idx_pago_cliente (cedula_cliente);
+-- ALTER TABLE pagos ADD CONSTRAINT fk_pago_cliente FOREIGN KEY (cedula_cliente) REFERENCES cliente(cedula) ON UPDATE CASCADE;
+--
+-- Migración de tablas nuevas (creditos_detalle + abonos_aplicados):
+-- CREATE TABLE creditos_detalle (...)  -- copiar definición completa de arriba
+-- CREATE TABLE abonos_aplicados (...)  -- copiar definición completa de arriba
+-- CREATE INDEX idx_cd_cliente_status ON creditos_detalle (cedula_cliente, status, saldo_pendiente_bcv);
+-- CREATE INDEX idx_cd_venta ON creditos_detalle (idVenta);
+-- CREATE INDEX idx_aa_pago ON abonos_aplicados (idPago);
+-- CREATE INDEX idx_aa_cd ON abonos_aplicados (idCreditoDetalle);
+--
+-- Migrar datos existentes de creditos → creditos_detalle:
+-- INSERT INTO creditos_detalle (idVenta, cedula_cliente, monto_credito_usd, monto_credito_bcv, saldo_pendiente_usd, saldo_pendiente_bcv)
+-- SELECT p.idVenta, cr.cedula_cliente, cr.saldo_deudor_usd, cr.saldo_deudor_bcv, cr.saldo_deudor_usd, cr.saldo_deudor_bcv
+-- FROM creditos cr
+-- INNER JOIN pagos p ON p.idVenta IS NOT NULL
+-- INNER JOIN tipo_de_pagos tp ON tp.idtipo_de_pagos = p.idtipo_de_pagos AND tp.tipoPago = 'Credito'
+-- INNER JOIN ventas_encabezado v ON v.idVenta = p.idVenta AND v.cedula_cliente = cr.cedula_cliente
+-- LEFT JOIN creditos_detalle cd ON cd.idVenta = p.idVenta
+-- WHERE cd.idCreditoDetalle IS NULL;
+--
+-- DROP TRIGGER IF EXISTS trg_pago_credito;
+-- (luego recrear el trigger con la nueva definición que incluye INSERT en creditos_detalle)
 
 CREATE VIEW vw_resumen_dashboard AS
 SELECT
@@ -1217,6 +1296,17 @@ BEGIN
         ON DUPLICATE KEY UPDATE
             saldo_deudor_usd = saldo_deudor_usd + VALUES(saldo_deudor_usd),
             saldo_deudor_bcv = saldo_deudor_bcv + VALUES(saldo_deudor_bcv);
+
+        INSERT INTO creditos_detalle (idVenta, cedula_cliente, monto_credito_usd, monto_credito_bcv, saldo_pendiente_usd, saldo_pendiente_bcv)
+        SELECT
+            v.idVenta,
+            v.cedula_cliente,
+            ROUND(v.total_usd * (NEW.monto_bcv / v.total_bcv), 2),
+            NEW.monto_bcv,
+            ROUND(v.total_usd * (NEW.monto_bcv / v.total_bcv), 2),
+            NEW.monto_bcv
+        FROM ventas_encabezado v
+        WHERE v.idVenta = NEW.idVenta;
     END IF;
 
     CALL sp_registrar_bitacora(

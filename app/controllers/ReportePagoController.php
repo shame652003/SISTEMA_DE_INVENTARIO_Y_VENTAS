@@ -102,6 +102,21 @@ class ReportePagoController extends Controller
         $this->json(['results' => $clientes ?: []]);
     }
 
+    public function creditosDetalle(): void
+    {
+        if (!$this->verificarPermiso('reportes_pagos')) return;
+
+        $cedula = (int) ($_POST['cedula'] ?? 0);
+        if ($cedula <= 0) {
+            $this->json(['ok' => false, 'mensaje' => 'Cédula inválida.']);
+            return;
+        }
+
+        $reporte = new Reporte();
+        $pendientes = $reporte->creditosDetallePendientes($cedula);
+        $this->json(['ok' => true, 'data' => $pendientes ?: []]);
+    }
+
     public function obtenerSaldoCredito(): void
     {
         if (!$this->verificarPermiso('reportes_pagos')) return;
