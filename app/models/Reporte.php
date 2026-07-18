@@ -244,7 +244,25 @@ class Reporte extends Model
                             FROM creditos_detalle cd
                             WHERE cd.idVenta = p.idVenta AND cd.status = 1
                             LIMIT 1), NULL
-                       ) AS credito_pendiente_bcv
+                       ) AS credito_pendiente_bcv,
+                       COALESCE(
+                           (SELECT cd.monto_credito_usd
+                            FROM creditos_detalle cd
+                            WHERE cd.idVenta = p.idVenta AND cd.status = 1
+                            LIMIT 1), 0
+                       ) AS credito_monto_usd,
+                       COALESCE(
+                           (SELECT cd.monto_credito_bcv
+                            FROM creditos_detalle cd
+                            WHERE cd.idVenta = p.idVenta AND cd.status = 1
+                            LIMIT 1), 0
+                       ) AS credito_monto_bcv,
+                       COALESCE(
+                           (SELECT SUM(pg.monto_recibido)
+                            FROM pagos pg
+                            INNER JOIN tipo_de_pagos tp2 ON tp2.idtipo_de_pagos = pg.idtipo_de_pagos
+                            WHERE pg.idVenta = p.idVenta AND tp2.tipoPago = 'Credito' AND pg.moneda = 'VES'), 0
+                       ) AS credito_monto_ves
                 FROM pagos p
                 INNER JOIN ventas_encabezado v ON v.idVenta = p.idVenta AND v.status = 1
                 INNER JOIN cliente c ON c.cedula = v.cedula_cliente
@@ -296,7 +314,25 @@ class Reporte extends Model
                          FROM creditos_detalle cd
                          WHERE cd.idVenta = p.idVenta AND cd.status = 1
                          LIMIT 1), NULL
-                    ) AS credito_pendiente_bcv
+                    ) AS credito_pendiente_bcv,
+                    COALESCE(
+                        (SELECT cd.monto_credito_usd
+                         FROM creditos_detalle cd
+                         WHERE cd.idVenta = p.idVenta AND cd.status = 1
+                         LIMIT 1), 0
+                    ) AS credito_monto_usd,
+                    COALESCE(
+                        (SELECT cd.monto_credito_bcv
+                         FROM creditos_detalle cd
+                         WHERE cd.idVenta = p.idVenta AND cd.status = 1
+                         LIMIT 1), 0
+                    ) AS credito_monto_bcv,
+                    COALESCE(
+                        (SELECT SUM(pg.monto_recibido)
+                         FROM pagos pg
+                         INNER JOIN tipo_de_pagos tp2 ON tp2.idtipo_de_pagos = pg.idtipo_de_pagos
+                         WHERE pg.idVenta = p.idVenta AND tp2.tipoPago = 'Credito' AND pg.moneda = 'VES'), 0
+                    ) AS credito_monto_ves
              FROM pagos p
              INNER JOIN ventas_encabezado v ON v.idVenta = p.idVenta AND v.status = 1
              INNER JOIN cliente c ON c.cedula = v.cedula_cliente

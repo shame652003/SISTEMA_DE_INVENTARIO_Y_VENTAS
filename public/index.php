@@ -116,8 +116,19 @@ $router->post('/stock/productos/buscar',  'StockController', 'buscarProductos', 
 $router->post('/stock/producto/info',     'StockController', 'productoInfo',    'auth');
 
 // Reportes
-$router->get('/reportes/pagos',            'ReportePagoController', 'index',   'auth');
-$router->post('/reportes/pagos/generar',   'ReportePagoController', 'generar', 'auth');
+$router->get('/reportes/pagos',                   'ReportePagoController', 'index',         'auth');
+$router->post('/reportes/pagos/generar',          'ReportePagoController', 'generar',        'auth');
+$router->post('/reportes/pagos/creditos',         'ReportePagoController', 'creditos',       'auth');
+$router->post('/reportes/pagos/cliente-detalle',  'ReportePagoController', 'clienteDetalle', 'auth');
+$router->post('/reportes/pagos/venta-detalle',    'ReportePagoController', 'ventaDetalle',   'auth');
+$router->post('/reportes/pagos/tipos',             'ReportePagoController', 'tipoPagos',      'auth');
+$router->post('/reportes/pagos/clientes/buscar',  'ReportePagoController', 'clientesBuscar', 'auth');
+$router->post('/reportes/pagos/saldo-credito',   'ReportePagoController', 'obtenerSaldoCredito', 'auth');
+$router->post('/reportes/pagos/abonar-credito',  'ReportePagoController', 'abonarCredito',  'auth');
+$router->post('/reportes/pagos/creditos-detalle', 'ReportePagoController', 'creditosDetalle', 'auth');
+$router->post('/reportes/pagos/pdf/historial',   'ReportePdfController', 'historial', 'auth');
+$router->post('/reportes/pagos/pdf/creditos',    'ReportePdfController', 'creditos',  'auth');
+$router->post('/reportes/pagos/pdf/venta',       'ReportePdfController', 'venta',     'auth');
 $router->get('/reportes/generales',         'ReporteGeneralController', 'index',   'auth');
 $router->post('/reportes/generales/generar','ReporteGeneralController', 'generar', 'auth');
 

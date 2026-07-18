@@ -1289,8 +1289,14 @@ BEGIN
         INSERT INTO creditos (cedula_cliente, saldo_deudor_usd, saldo_deudor_bcv)
         SELECT
             v.cedula_cliente,
-            ROUND(v.total_usd * (NEW.monto_bcv / v.total_bcv), 2),
-            NEW.monto_bcv
+            CASE WHEN NEW.moneda = 'USD'
+                THEN NEW.monto_recibido
+                ELSE ROUND(v.total_usd * (NEW.monto_bcv / v.total_bcv), 2)
+            END,
+            CASE WHEN NEW.moneda = 'USD'
+                THEN ROUND(v.total_bcv * (NEW.monto_recibido / NULLIF(v.total_usd, 0)), 2)
+                ELSE NEW.monto_bcv
+            END
         FROM ventas_encabezado v
         WHERE v.idVenta = NEW.idVenta
         ON DUPLICATE KEY UPDATE
@@ -1301,10 +1307,22 @@ BEGIN
         SELECT
             v.idVenta,
             v.cedula_cliente,
-            ROUND(v.total_usd * (NEW.monto_bcv / v.total_bcv), 2),
-            NEW.monto_bcv,
-            ROUND(v.total_usd * (NEW.monto_bcv / v.total_bcv), 2),
-            NEW.monto_bcv
+            CASE WHEN NEW.moneda = 'USD'
+                THEN NEW.monto_recibido
+                ELSE ROUND(v.total_usd * (NEW.monto_bcv / v.total_bcv), 2)
+            END,
+            CASE WHEN NEW.moneda = 'USD'
+                THEN ROUND(v.total_bcv * (NEW.monto_recibido / NULLIF(v.total_usd, 0)), 2)
+                ELSE NEW.monto_bcv
+            END,
+            CASE WHEN NEW.moneda = 'USD'
+                THEN NEW.monto_recibido
+                ELSE ROUND(v.total_usd * (NEW.monto_bcv / v.total_bcv), 2)
+            END,
+            CASE WHEN NEW.moneda = 'USD'
+                THEN ROUND(v.total_bcv * (NEW.monto_recibido / NULLIF(v.total_usd, 0)), 2)
+                ELSE NEW.monto_bcv
+            END
         FROM ventas_encabezado v
         WHERE v.idVenta = NEW.idVenta;
     END IF;

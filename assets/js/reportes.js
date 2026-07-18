@@ -11,6 +11,7 @@ $(function () {
     var dtPagosCliente = null;
     var abonoModo = 'abonar';
     var cedulaClienteExpandida = null;
+    var descargandoPdf = false;
 
     var modalVenta = new bootstrap.Modal(document.getElementById('modal-venta-detalle'));
     var modalAbono = new bootstrap.Modal(document.getElementById('modal-abonar-credito'));
@@ -127,6 +128,7 @@ $(function () {
             pagosTbody.append('<tr><td colspan="4" class="text-center text-muted">Sin pagos</td></tr>');
         }
 
+        $('#btn-pdf-venta').data('idventa', enc.idVenta);
         modalVenta.show();
     }
 
@@ -205,19 +207,47 @@ $(function () {
                 $tablaHistorial.find('tbody').empty();
 
                 if (rows.length === 0) {
-                    $tablaHistorial.find('tbody').html('<tr><td colspan="7" class="text-center text-muted py-4">No se encontraron pagos en el rango seleccionado</td></tr>');
+                    $tablaHistorial.find('tbody').html('<tr><td colspan="8" class="text-center text-muted py-4">No se encontraron pagos en el rango seleccionado</td></tr>');
                     $('#contador-pagos').hide();
+                    $('#btn-pdf-historial').hide();
                     return;
                 }
 
                 for (var i = 0; i < rows.length; i++) {
                     var p = rows[i];
+                    var creditoVes = parseFloat(p.credito_monto_ves) || 0;
+                    var monedasStr = p.monedas || '';
+                    var esVes = monedasStr.indexOf('VES') !== -1;
+                    var totalVes = parseFloat(p.total_ves) || 0;
+
+                    var totalBcvCol;
+                    if (!esVes) {
+                        totalBcvCol = formatoMoneda(p.total_usd, 'USD') + ' <small class="text-muted">USD</small>';
+                    } else {
+                        totalBcvCol = formatoMoneda(p.total_bcv, 'USD');
+                    }
+
+                    var totalVesCol;
+                    if (!esVes) {
+                        totalVesCol = '<span class="text-muted">—</span>';
+                    } else if (creditoVes > 0) {
+                        var pagadoVes = (totalVes - creditoVes).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        var creditoVesFmt = creditoVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        var txtEstado = p.credito_pagado === 0 ? 'pendiente' : 'pagado';
+                        totalVesCol = 'Bs. ' + pagadoVes + ' pagado<br>'
+                            + '<small class="text-muted">+ Bs. ' + creditoVesFmt + ' credito ' + txtEstado + '</small><br>'
+                            + '<small>= Bs. ' + totalVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</small>';
+                    } else {
+                        totalVesCol = 'Bs. ' + totalVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    }
+
                     var row = '<tr class="fila-pago" data-idventa="' + p.idVenta + '" style="cursor:pointer;">' +
                         '<td><span class="fw-bold">#' + p.idVenta + '</span></td>' +
                         '<td>' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
                         '<td>' + p.cliente + ' <small class="text-muted">(' + p.cedula_cliente + ')</small></td>' +
                         '<td>' + badgesMetodosPago(p.metodos_pago) + '</td>' +
-                        '<td class="text-end fw-bold">' + formatoMoneda(p.total_bcv, 'USD') + '</td>' +
+                        '<td class="text-end fw-bold" data-sort="' + parseFloat(p.total_bcv) + '">' + totalBcvCol + '</td>' +
+                        '<td class="text-end fw-bold" data-sort="' + totalVes.toFixed(2) + '">' + totalVesCol + '</td>' +
                         '<td>' + badgeEstadoCredito(p.credito_pagado, p.metodos_pago) + '</td>' +
                         '<td>' + p.vendedor + '</td>' +
                         '</tr>';
@@ -229,11 +259,12 @@ $(function () {
                     pageLength: 25,
                     responsive: true,
                     columnDefs: [
-                        { orderable: false, targets: [3, 5] }
+                        { orderable: false, targets: [3, 6] }
                     ]
                 });
 
                 $('#contador-pagos').text(rows.length + ' ventas encontradas').show();
+                $('#btn-pdf-historial').show();
             });
     }
 
@@ -285,6 +316,7 @@ $(function () {
 
                 if (rows.length === 0) {
                     $tablaCreditos.find('tbody').html('<tr><td colspan="6" class="text-center text-muted py-4">No hay clientes con créditos pendientes</td></tr>');
+                    $('#btn-pdf-creditos').hide();
                     return;
                 }
 
@@ -320,6 +352,7 @@ $(function () {
                         { orderable: false, targets: [5] }
                     ]
                 });
+                $('#btn-pdf-creditos').show();
             });
     }
 
@@ -810,5 +843,96 @@ $(function () {
                     $('#resultado-reporte-general').html('<p class="text-success">Reporte generado correctamente.</p>');
                 }
             });
+    });
+
+    // ============================================================
+    // DESCARGAS PDF
+    // ============================================================
+    function descargarPdf(url, data, $btn) {
+        if (descargandoPdf) return;
+        descargandoPdf = true;
+
+        Swal.fire({
+            title: '¿Descargar PDF?',
+            text: 'Se generará un archivo PDF con la información actual.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, descargar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#ea580c'
+        }).then(function (result) {
+            if (!result.isConfirmed) {
+                descargandoPdf = false;
+                return;
+            }
+
+            if ($btn) $btn.prop('disabled', true);
+
+            Swal.fire({
+                title: 'Generando PDF',
+                html: 'Por favor espere mientras se genera el archivo...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: function () {
+                    Swal.showLoading();
+                }
+            });
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', window.BASE_URL + url, true);
+            xhr.responseType = 'blob';
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function () {
+                Swal.close();
+                descargandoPdf = false;
+                if ($btn) $btn.prop('disabled', false);
+
+                if (xhr.status === 200) {
+                    var blob = xhr.response;
+                    var disposition = xhr.getResponseHeader('Content-Disposition');
+                    var filename = 'documento.pdf';
+                    if (disposition && disposition.indexOf('filename=') !== -1) {
+                        filename = disposition.split('filename=')[1].replace(/"/g, '').trim();
+                    }
+                    var link = document.createElement('a');
+                    link.href = window.URL.createObjectURL(blob);
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(link.href);
+                } else {
+                    Swal.fire('Error', 'No se pudo generar el PDF.', 'error');
+                }
+            };
+            xhr.onerror = function () {
+                Swal.close();
+                descargandoPdf = false;
+                if ($btn) $btn.prop('disabled', false);
+                Swal.fire('Error', 'No se pudo generar el PDF.', 'error');
+            };
+            xhr.send($.param(data));
+        });
+    }
+
+    $('#btn-pdf-historial').on('click', function () {
+        var data = {
+            fecha_inicio: $('#fecha-inicio').val(),
+            fecha_fin: $('#fecha-fin').val(),
+            metodo_pago: $('#metodo-pago').val(),
+            cedula_cliente: $('#select-cliente').val()
+        };
+        descargarPdf(window.ROUTES.reportes_pagos_pdf_historial, data, $(this));
+    });
+
+    $('#btn-pdf-creditos').on('click', function () {
+        descargarPdf(window.ROUTES.reportes_pagos_pdf_creditos, {}, $(this));
+    });
+
+    $('#btn-pdf-venta').on('click', function () {
+        var idVenta = $(this).data('idventa');
+        if (!idVenta) return;
+        descargarPdf(window.ROUTES.reportes_pagos_pdf_venta, { id: idVenta }, $(this));
     });
 });

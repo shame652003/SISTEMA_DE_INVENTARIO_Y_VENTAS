@@ -735,3 +735,23 @@ table.dataTable tbody td {
         transition: none;
     }
 }
+
+/* ─── Botón Descargar PDF ─── */
+.btn-pdf {
+    background: #ea580c;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+.btn-pdf:hover {
+    background: #c2410c;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(234, 88, 12, 0.3);
+}
+.btn-pdf i {
+    margin-right: 4px;
+}

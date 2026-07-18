@@ -78,6 +78,9 @@
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Detalle de Pagos</h5>
                     <span class="badge bg-primary" id="contador-pagos" style="display:none;">0 pagos encontrados</span>
+                    <button class="btn btn-sm btn-pdf ms-2" id="btn-pdf-historial" title="Descargar PDF del historial" style="display:none;">
+                        <i class="bi bi-file-earmark-pdf"></i> PDF
+                    </button>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -89,13 +92,14 @@
                                     <th>Cliente</th>
                                     <th>Métodos de Pago</th>
                                     <th class="text-end">Total BCV</th>
+                                    <th class="text-end">Total VES</th>
                                     <th>Estado Crédito</th>
                                     <th>Vendedor</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted py-4">Seleccione un rango de fechas y genere el reporte</td>
+                                    <td colspan="8" class="text-center text-muted py-4">Seleccione un rango de fechas y genere el reporte</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -110,6 +114,9 @@
                     <h5 class="mb-0"><i class="bi bi-people me-2"></i>Clientes con Créditos Pendientes</h5>
                     <button class="btn btn-sm btn-outline-warning" id="btn-cargar-creditos">
                         <i class="bi bi-arrow-repeat me-1"></i> Cargar Créditos
+                    </button>
+                    <button class="btn btn-sm btn-pdf ms-2" id="btn-pdf-creditos" title="Descargar PDF de créditos" style="display:none;">
+                        <i class="bi bi-file-earmark-pdf"></i> PDF
                     </button>
                 </div>
                 <div class="card-body p-0">
@@ -335,6 +342,9 @@
                 </div>
             </div>
             <div class="modal-footer border-0 bg-light">
+                <button type="button" class="btn btn-pdf me-auto" id="btn-pdf-venta" title="Descargar PDF de esta venta">
+                    <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+                </button>
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
