@@ -8,7 +8,96 @@ class Reporte extends Model
 {
     public function resumenDashboard(): array
     {
-        return $this->fetch("SELECT * FROM vw_resumen_dashboard");
+        $row = $this->fetch("SELECT * FROM vw_resumen_dashboard");
+        if ($row) {
+            $row['total_bcv_hoy'] = $row['total_bcv_hoy'] ?? 0;
+            $row['total_ves_hoy'] = $row['total_ves_hoy'] ?? 0;
+            $row['creditos_pendientes_bcv'] = $row['creditos_pendientes_bcv'] ?? 0;
+        }
+        return $row;
+    }
+
+    public function ventasDiariasUltimos7Dias(): array
+    {
+        return $this->fetchAll(
+            "SELECT fecha, cantidad_ventas, unidades_vendidas, venta_total_usd, venta_total_ves, ganancia_estimada_usd
+             FROM vw_ventas_diarias
+             WHERE fecha >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+             ORDER BY fecha ASC"
+        );
+    }
+
+    public function ventasMensualesUltimoAnio(): array
+    {
+        return $this->fetchAll(
+            "SELECT anio, mes, cantidad_ventas, unidades_vendidas, venta_total_usd, venta_total_ves, ganancia_estimada_usd
+             FROM vw_ventas_mensuales
+             WHERE (anio = YEAR(CURRENT_DATE) AND mes <= MONTH(CURRENT_DATE))
+                OR (anio = YEAR(DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR)) AND mes > MONTH(CURRENT_DATE))
+             ORDER BY anio ASC, mes ASC
+             LIMIT 12"
+        );
+    }
+
+    public function pagosAgrupadosPorTipo(): array
+    {
+        return $this->fetchAll("SELECT * FROM vw_pagos_por_tipo ORDER BY cantidad_pagos DESC");
+    }
+
+    public function ventasPorTipoProducto(): array
+    {
+        return $this->fetchAll("SELECT * FROM vw_ventas_por_tipo_producto ORDER BY venta_total_usd DESC");
+    }
+
+    public function productosMasVendidosTop(int $limite = 10): array
+    {
+        return $this->fetchAll(
+            "SELECT * FROM vw_productos_mas_vendidos LIMIT ?",
+            [$limite]
+        );
+    }
+
+    public function ultimasVentas(int $limite = 10): array
+    {
+        return $this->fetchAll(
+            "SELECT v.idVenta, v.fecha, v.hora, v.total_usd, v.total_ves, v.total_bcv,
+                    CONCAT(c.nombre, ' ', c.apellido) AS cliente,
+                    CONCAT(u.nombre, ' ', u.apellido) AS vendedor
+             FROM ventas_encabezado v
+             INNER JOIN cliente c ON c.cedula = v.cedula_cliente
+             INNER JOIN usuario u ON u.cedula = v.cedula_usuario
+             WHERE v.status = 1
+             ORDER BY v.fecha DESC, v.hora DESC, v.idVenta DESC
+             LIMIT ?",
+            [$limite]
+        );
+    }
+
+    public function clientesMasFrecuentes(int $limite = 10): array
+    {
+        return $this->fetchAll(
+            "SELECT * FROM vw_ventas_por_cliente
+             ORDER BY cantidad_ventas DESC, venta_total_usd DESC
+             LIMIT ?",
+            [$limite]
+        );
+    }
+
+    public function creditosPorAntiguedad(int $limite = 10): array
+    {
+        return $this->fetchAll(
+            "SELECT cd.idCreditoDetalle, cd.idVenta, cd.monto_credito_bcv, cd.saldo_pendiente_bcv,
+                    cd.fecha_creacion, v.fecha AS fecha_venta,
+                    CONCAT(c.nombre, ' ', c.apellido) AS cliente,
+                    c.cedula
+             FROM creditos_detalle cd
+             INNER JOIN cliente c ON c.cedula = cd.cedula_cliente
+             INNER JOIN ventas_encabezado v ON v.idVenta = cd.idVenta
+             WHERE cd.saldo_pendiente_bcv > 0 AND cd.status = 1
+             ORDER BY cd.fecha_creacion ASC
+             LIMIT ?",
+            [$limite]
+        );
     }
 
     public function ventasPorPeriodo(string $inicio, string $fin): array

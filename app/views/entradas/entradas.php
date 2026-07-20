@@ -52,22 +52,31 @@ $margenVes = $margenVes ?? null;
                     <!-- Info Producto Seleccionado -->
                     <div id="info-producto" class="mb-4 d-none">
                         <div class="alert alert-info border-0 shadow-sm">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <small class="text-muted d-block">Código</small>
-                                    <strong id="info-codigo">-</strong>
+                            <div class="row g-3 align-items-center">
+                                <div class="col-md-3">
+                                    <div id="img-producto-entrada-container" class="d-none text-center">
+                                        <img id="img-producto-entrada" src="" alt="Imagen del producto" class="img-thumbnail" style="max-height: 120px; max-width: 100%; object-fit: contain;">
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <small class="text-muted d-block">Nombre</small>
-                                    <strong id="info-nombre">-</strong>
-                                </div>
-                                <div class="col-md-6">
-                                    <small class="text-muted d-block">Tipo</small>
-                                    <strong id="info-tipo">-</strong>
-                                </div>
-                                <div class="col-md-6">
-                                    <small class="text-muted d-block">Stock Actual</small>
-                                    <strong id="info-stock">-</strong>
+                                <div class="col-md-9">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">Código</small>
+                                            <strong id="info-codigo">-</strong>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">Nombre</small>
+                                            <strong id="info-nombre">-</strong>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">Tipo</small>
+                                            <strong id="info-tipo">-</strong>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">Stock Actual</small>
+                                            <strong id="info-stock">-</strong>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -89,25 +98,32 @@ $margenVes = $margenVes ?? null;
                                     <label for="cantidad" class="form-label">Cantidad <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="bi bi-box"></i></span>
-                                        <input type="number" class="form-control" id="cantidad" step="0.001" min="0.001" placeholder="0.000" required>
+                                        <input type="number" class="form-control" id="cantidad" step="1" min="1" placeholder="0" required>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Precios Calculados -->
                             <div class="row g-3 mt-3">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label class="form-label">Precio Venta USD (calculado)</label>
                                     <div class="input-group">
                                         <span class="input-group-text bg-success text-white"><i class="bi bi-tag"></i></span>
                                         <input type="text" class="form-control bg-light" id="precio-venta-usd" readonly value="$0.00">
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label class="form-label">Precio Venta VES (calculado)</label>
                                     <div class="input-group">
                                         <span class="input-group-text bg-warning text-dark"><i class="bi bi-tag"></i></span>
                                         <input type="text" class="form-control bg-light" id="precio-venta-ves" readonly value="Bs. 0.00">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Precio Venta BCV (calculado)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-info text-white"><i class="bi bi-tag"></i></span>
+                                        <input type="text" class="form-control bg-light" id="precio-venta-bcv" readonly value="$0.00">
                                     </div>
                                 </div>
                             </div>
@@ -157,6 +173,15 @@ $margenVes = $margenVes ?? null;
                                 </tr>
                             </tfoot>
                         </table>
+                    </div>
+                    <div id="paginacion-items" class="d-none d-flex justify-content-between align-items-center mt-2">
+                        <button class="btn btn-sm btn-outline-secondary" id="btn-pagina-anterior" disabled>
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <small class="text-muted" id="pagina-info"></small>
+                        <button class="btn btn-sm btn-outline-secondary" id="btn-pagina-siguiente" disabled>
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -216,15 +241,18 @@ $margenVes = $margenVes ?? null;
                             <tr>
                                 <th>Código</th>
                                 <th>Producto</th>
-                                <th class="text-end">Costo USD</th>
+                                <th class="text-end">Precio Costo</th>
+                                <th class="text-end">P. Venta USD</th>
+                                <th class="text-end">P. Venta VES</th>
+                                <th class="text-end">P. Venta BCV</th>
                                 <th class="text-end">Cantidad</th>
                                 <th class="text-end">Subtotal USD</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
-                    </table>
+                        </table>
+                    </div>
                 </div>
-            </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>

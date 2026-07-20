@@ -65,6 +65,7 @@ class Controller
     {
         $necesitaSelect2 = in_array($modulo, ['ventas', 'clientes', 'entradas', 'salidas', 'stock', 'reportes_pagos']);
         $necesitaDataTables = in_array($modulo, ['dashboard', 'usuarios', 'clientes', 'productos', 'entradas', 'salidas', 'stock', 'reportes_pagos']);
+        $necesitaApexCharts = in_array($modulo, ['dashboard']);
 
         $data = ['modulo' => $modulo];
 
@@ -83,6 +84,10 @@ class Controller
             $extraLibsJS .= '<script src="' . BASE_URL . '/assets/lib/datatables/js/dataTables.bootstrap5.min.js"></script>' . "\n";
             $extraLibsJS .= '<script src="' . BASE_URL . '/assets/lib/datatables/js/dataTables.responsive.min.js"></script>' . "\n";
             $extraLibsJS .= '<script src="' . BASE_URL . '/assets/lib/datatables/js/responsive.bootstrap5.min.js"></script>' . "\n";
+        }
+
+        if ($necesitaApexCharts) {
+            $extraLibsJS .= '<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>' . "\n";
         }
 
         if ($extraCSS !== '') $data['extraCSS'] = $extraCSS;

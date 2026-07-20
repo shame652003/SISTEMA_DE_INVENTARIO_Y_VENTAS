@@ -35,6 +35,11 @@ $router->get('/auth/me',      'AuthController', 'me',     'auth');
 
 // Dashboard
 $router->get('/dashboard', 'DashboardController', 'index', 'auth');
+$router->post('/dashboard/bcv/actualizar', 'DashboardController', 'actualizarBcv', 'auth');
+$router->post('/dashboard/bcv/consultar-api', 'DashboardController', 'consultarBcvApi', 'auth');
+$router->post('/dashboard/margen/actualizar', 'DashboardController', 'actualizarMargen', 'auth');
+$router->post('/dashboard/graficas', 'DashboardController', 'graficas', 'auth');
+$router->post('/dashboard/ultimas-ventas', 'DashboardController', 'ultimasVentas', 'auth');
 
 // Usuarios
 $router->get('/usuarios',                'UsuarioController', 'index',        'auth');
@@ -80,6 +85,8 @@ $router->post('/productos/eliminar',         'ProductoController', 'eliminar',  
 $router->post('/productos/tipos/listar',     'ProductoController', 'listarTipos',    'auth');
 $router->post('/productos/tipos/guardar',    'ProductoController', 'guardarTipo',    'auth');
 $router->post('/productos/tipos/eliminar',   'ProductoController', 'eliminarTipo',   'auth');
+$router->post('/productos/verificar-codigo',  'ProductoController', 'verificarCodigo','auth');
+$router->post('/productos/tipos/verificar',   'ProductoController', 'verificarTipo',  'auth');
 
 // Entradas
 $router->get('/entradas',                    'EntradaController', 'index',           'auth');

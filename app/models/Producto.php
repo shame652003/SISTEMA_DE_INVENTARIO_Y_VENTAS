@@ -101,4 +101,25 @@ class Producto extends Model
         $res = $this->fetch("SELECT COUNT(*) AS total FROM {$this->table} WHERE idTipoA = ? AND status = 1", [$idTipoA]);
         return ($res['total'] ?? 0) > 0;
     }
+
+    public function existeTipo(string $tipo): bool
+    {
+        $res = $this->fetch(
+            "SELECT COUNT(*) AS total FROM tipo_productos WHERE LOWER(tipo) = LOWER(?) AND status = 1",
+            [$tipo]
+        );
+        return ($res['total'] ?? 0) > 0;
+    }
+
+    public function productoTieneVentas(int $idproducto): bool
+    {
+        $res = $this->fetch(
+            "SELECT COUNT(*) AS total
+             FROM ventas_detalle vd
+             INNER JOIN ventas_encabezado ve ON ve.idVenta = vd.idVenta
+             WHERE vd.idproducto = ? AND ve.status = 1",
+            [$idproducto]
+        );
+        return ($res['total'] ?? 0) > 0;
+    }
 }

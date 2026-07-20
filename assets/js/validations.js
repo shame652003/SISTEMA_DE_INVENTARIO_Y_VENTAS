@@ -171,6 +171,88 @@ const Validaciones = {
     },
 
     /**
+     * Valida que el código tenga formato alfanumérico (letras y números)
+     */
+    codigoFormato: function (selector, nombre = 'Código') {
+        const valor = $(selector).val().trim();
+        const regex = /^[A-Za-z0-9]+$/;
+        if (valor && !regex.test(valor)) {
+            $(selector).addClass('is-invalid');
+            this._mostrarError(selector, `${nombre} solo debe contener letras y números.`);
+            return false;
+        }
+        $(selector).removeClass('is-invalid');
+        return true;
+    },
+
+    /**
+     * Fuerza mayúsculas en un campo de texto
+     */
+    formatearMayusculas: function (selector) {
+        const $input = $(selector);
+        const valor = $input.val();
+        if (!valor) return;
+        const formateado = valor.toUpperCase();
+        if (formateado !== valor) {
+            $input.val(formateado);
+        }
+    },
+
+    /**
+     * Verifica vía AJAX si un código de producto ya está registrado.
+     */
+    codigoUnico: function (selector, url, nombre = 'Código') {
+        const $input = $(selector);
+        const valor = $input.val().trim();
+        if (!valor) return Promise.resolve(true);
+
+        return new Promise(function (resolve) {
+            Ajax.post(url, { codigo: valor, id: $('#producto-id').val() || '' })
+                .done(function (res) {
+                    if (res.ok && res.existe) {
+                        $input.addClass('is-invalid');
+                        Validaciones._mostrarError(selector, `${nombre} "${valor}" ya está registrado.`);
+                        resolve(false);
+                    } else {
+                        $input.removeClass('is-invalid');
+                        $input.siblings('.invalid-feedback').remove();
+                        resolve(true);
+                    }
+                })
+                .fail(function () {
+                    resolve(true);
+                });
+        });
+    },
+
+    /**
+     * Verifica vía AJAX si un tipo de producto ya está registrado.
+     */
+    tipoUnico: function (selector, url, nombre = 'Tipo') {
+        const $input = $(selector);
+        const valor = $input.val().trim();
+        if (!valor) return Promise.resolve(true);
+
+        return new Promise(function (resolve) {
+            Ajax.post(url, { tipo: valor })
+                .done(function (res) {
+                    if (res.ok && res.existe) {
+                        $input.addClass('is-invalid');
+                        Validaciones._mostrarError(selector, `${nombre} "${valor}" ya está registrado.`);
+                        resolve(false);
+                    } else {
+                        $input.removeClass('is-invalid');
+                        $input.siblings('.invalid-feedback').remove();
+                        resolve(true);
+                    }
+                })
+                .fail(function () {
+                    resolve(true);
+                });
+        });
+    },
+
+    /**
      * Valida todos los campos requeridos de un formulario
      */
     validarFormulario: function (formSelector) {

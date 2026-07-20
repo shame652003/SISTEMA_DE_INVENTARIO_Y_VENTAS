@@ -8,7 +8,12 @@ $rutasGlobales = [
     'auth_me'      => '/auth/me',
     'login'        => '/login',
     'recuperar'    => '/recuperar',
-    'dashboard'    => '/dashboard',
+    'dashboard'          => '/dashboard',
+    'dashboard_bcv_actualizar'      => '/dashboard/bcv/actualizar',
+    'dashboard_bcv_consultar_api'   => '/dashboard/bcv/consultar-api',
+    'dashboard_margen_actualizar'   => '/dashboard/margen/actualizar',
+    'dashboard_graficas'             => '/dashboard/graficas',
+    'dashboard_ultimas_ventas'      => '/dashboard/ultimas-ventas',
 ];
 
 $rutasPorModulo = [
@@ -56,6 +61,8 @@ $rutasPorModulo = [
         'productos_tipos_listar'  => '/productos/tipos/listar',
         'productos_tipos_guardar' => '/productos/tipos/guardar',
         'productos_tipos_eliminar'=> '/productos/tipos/eliminar',
+        'productos_verificar_codigo' => '/productos/verificar-codigo',
+        'productos_tipos_verificar'  => '/productos/tipos/verificar',
     ],
     'entradas' => [
         'entradas'               => '/entradas',

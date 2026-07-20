@@ -19,8 +19,9 @@ $tipos = $tipos ?? [];
                                     <li class="breadcrumb-item active" aria-current="page">Productos</li>
                                 </ol>
                             </nav>
-                        </div>
-                    </div>
+    </div>
+    </form>
+</div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-lista-productos" id="btn-ver-productos">
                             <i class="bi bi-plus-lg me-1"></i> Ver Productos
@@ -31,18 +32,39 @@ $tipos = $tipos ?? [];
         </div>
     </div>
 
+    <form id="form-producto" enctype="multipart/form-data">
+        <input type="hidden" id="producto-id" name="id" value="">
     <div class="row">
         <!-- Card Imagen -->
         <div class="col-md-4">
             <div class="card shadow">
                 <div class="card-body text-center">
                     <h5 class="card-title mb-3"><i class="bi bi-image me-2"></i>Imagen del Producto</h5>
-                    <div id="preview-container" class="mb-3">
+                    <div id="preview-container" class="mb-3 position-relative">
                         <img id="img-preview" src="<?= BASE_URL ?>/assets/img/placeholder-product.svg" alt="Vista previa" class="img-fluid rounded border" style="max-height: 250px; object-fit: cover;">
+                        <video id="camara-video" class="img-fluid rounded border" style="max-height: 250px; object-fit: cover; display:none;" autoplay playsinline></video>
+                        <canvas id="camara-canvas" style="display:none;"></canvas>
                     </div>
-                    <div class="mb-3">
-                        <input type="file" class="form-control" id="imagen" name="imagen" accept="image/*">
+
+                    <div id="camara-controles" class="d-flex gap-2 justify-content-center mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" id="btn-tomar-foto" title="Tomar foto con cámara">
+                            <i class="bi bi-camera-fill"></i> Tomar Foto
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-seleccionar-archivo" title="Seleccionar archivo">
+                            <i class="bi bi-folder2-open"></i> Seleccionar
+                        </button>
                     </div>
+
+                    <div id="camara-acciones" class="d-flex gap-2 justify-content-center mb-3" style="display:none;">
+                        <button type="button" class="btn btn-success btn-sm" id="btn-capturar" title="Capturar foto">
+                            <i class="bi bi-camera"></i> Capturar
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm" id="btn-cancelar-camara" title="Cancelar cámara">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </button>
+                    </div>
+
+                    <input type="file" class="form-control" id="imagen" name="imagen" accept="image/jpeg,image/png,image/webp" style="display:none;">
                 </div>
             </div>
         </div>
@@ -53,8 +75,6 @@ $tipos = $tipos ?? [];
                 <div class="card-body">
                     <h5 class="card-title mb-4"><i class="bi bi-gear-wide-connected me-2"></i>Datos del Repuesto</h5>
 
-                    <form id="form-producto" enctype="multipart/form-data">
-                        <input type="hidden" id="producto-id" name="id" value="">
 
                         <div class="row">
                             <!-- Tipo Producto -->
@@ -78,7 +98,7 @@ $tipos = $tipos ?? [];
                                 <label for="codigo" class="form-label">Código <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
-                                    <input type="text" class="form-control" id="codigo" name="codigo" placeholder="Ej: REP-001" required autocomplete="off">
+                                    <input type="text" class="form-control" id="codigo" name="codigo" placeholder="Ej: BUJI0001" required autocomplete="off" style="text-transform:uppercase;">
                                 </div>
                             </div>
 
@@ -87,7 +107,7 @@ $tipos = $tipos ?? [];
                                 <label for="nombre" class="form-label">Nombre del Repuesto <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-box-seam"></i></span>
-                                    <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Ej: Filtro de aceite" required autocomplete="off">
+                                    <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Ej: FILTRO DE ACEITE" required autocomplete="off" style="text-transform:uppercase;">
                                 </div>
                             </div>
 
@@ -114,11 +134,11 @@ $tipos = $tipos ?? [];
                                 <i class="bi bi-save me-1"></i> <span id="btn-guardar-texto">Registrar</span>
                             </button>
                         </div>
-                    </form>
                 </div>
             </div>
         </div>
     </div>
+    </form>
 </div>
 
 <!-- Modal Lista de Productos -->

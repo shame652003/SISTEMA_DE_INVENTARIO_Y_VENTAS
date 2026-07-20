@@ -16,6 +16,10 @@ CREATE TABLE rol (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 INSERT INTO rol (idRol, nombreRol, status) VALUES (1, 'Super Usuario', 1);
+INSERT INTO rol (idRol, nombreRol, status) VALUES (2, 'Administrador', 1);
+INSERT INTO rol (idRol, nombreRol, status) VALUES (3, 'Vendedor', 1);
+
+
 
 CREATE TABLE usuario (
     cedula INT PRIMARY KEY,
@@ -414,6 +418,7 @@ SELECT
     COALESCE(SUM(d.cantidad), 0) AS unidades_vendidas,
     COALESCE(SUM(d.subtotal_costo_usd), 0) AS costo_total_usd,
     COALESCE(SUM(d.subtotal_usd), 0) AS venta_total_usd,
+    COALESCE(SUM(d.subtotal_bcv), 0) AS venta_total_bcv,
     COALESCE(SUM(d.subtotal_ves), 0) AS venta_total_ves,
     COALESCE(SUM(d.subtotal_usd - d.subtotal_costo_usd), 0) AS ganancia_estimada_usd
 FROM ventas_encabezado v
@@ -431,6 +436,7 @@ SELECT
     COALESCE(SUM(d.cantidad), 0) AS unidades_vendidas,
     COALESCE(SUM(d.subtotal_costo_usd), 0) AS costo_total_usd,
     COALESCE(SUM(d.subtotal_usd), 0) AS venta_total_usd,
+    COALESCE(SUM(d.subtotal_bcv), 0) AS venta_total_bcv,
     COALESCE(SUM(d.subtotal_ves), 0) AS venta_total_ves,
     COALESCE(SUM(d.subtotal_usd - d.subtotal_costo_usd), 0) AS ganancia_estimada_usd
 FROM ventas_encabezado v
@@ -446,6 +452,7 @@ SELECT
     COALESCE(SUM(d.cantidad), 0) AS unidades_vendidas,
     COALESCE(SUM(d.subtotal_costo_usd), 0) AS costo_total_usd,
     COALESCE(SUM(d.subtotal_usd), 0) AS venta_total_usd,
+    COALESCE(SUM(d.subtotal_bcv), 0) AS venta_total_bcv,
     COALESCE(SUM(d.subtotal_ves), 0) AS venta_total_ves,
     COALESCE(SUM(d.subtotal_usd - d.subtotal_costo_usd), 0) AS ganancia_estimada_usd
 FROM ventas_encabezado v
@@ -464,6 +471,7 @@ SELECT
     SUM(d.cantidad) AS unidades_vendidas,
     SUM(d.subtotal_costo_usd) AS costo_total_usd,
     SUM(d.subtotal_usd) AS venta_total_usd,
+    SUM(d.subtotal_bcv) AS venta_total_bcv,
     SUM(d.subtotal_ves) AS venta_total_ves,
     SUM(d.subtotal_usd - d.subtotal_costo_usd) AS ganancia_estimada_usd
 FROM ventas_detalle d
@@ -486,6 +494,7 @@ SELECT
     SUM(d.cantidad) AS unidades_vendidas,
     SUM(d.subtotal_costo_usd) AS costo_total_usd,
     SUM(d.subtotal_usd) AS venta_total_usd,
+    SUM(d.subtotal_bcv) AS venta_total_bcv,
     SUM(d.subtotal_ves) AS venta_total_ves,
     SUM(d.subtotal_usd - d.subtotal_costo_usd) AS ganancia_estimada_usd
 FROM ventas_detalle d
@@ -501,7 +510,8 @@ SELECT
     tp.tipoPago,
     COUNT(p.idPago) AS cantidad_pagos,
     SUM(CASE WHEN p.moneda = 'USD' THEN p.monto_recibido ELSE 0 END) AS total_recibido_usd,
-    SUM(CASE WHEN p.moneda = 'VES' THEN p.monto_recibido ELSE 0 END) AS total_recibido_ves
+    SUM(CASE WHEN p.moneda = 'VES' THEN p.monto_recibido ELSE 0 END) AS total_recibido_ves,
+    SUM(p.monto_bcv) AS total_recibido_bcv
 FROM pagos p
 INNER JOIN tipo_de_pagos tp ON tp.idtipo_de_pagos = p.idtipo_de_pagos
 GROUP BY tp.idtipo_de_pagos, tp.tipoPago;
@@ -647,7 +657,14 @@ SELECT
     (SELECT COUNT(*) FROM producto WHERE status = 1 AND stock > 0 AND stock <= stock_minimo) AS productos_stock_bajo,
     (SELECT COUNT(*) FROM ventas_encabezado WHERE status = 1 AND fecha = CURRENT_DATE) AS ventas_hoy,
     (SELECT COALESCE(SUM(total_usd), 0) FROM ventas_encabezado WHERE status = 1 AND fecha = CURRENT_DATE) AS total_usd_hoy,
-    (SELECT COALESCE(SUM(total_ves), 0) FROM ventas_encabezado WHERE status = 1 AND fecha = CURRENT_DATE) AS total_ves_hoy,
+    (SELECT COALESCE(SUM(p.monto_bcv), 0)
+     FROM pagos p
+     INNER JOIN tipo_de_pagos tp ON tp.idtipo_de_pagos = p.idtipo_de_pagos
+     WHERE tp.tipoPago <> 'Credito' AND DATE(p.fecha_pago) = CURRENT_DATE) AS total_bcv_hoy,
+    (SELECT COALESCE(SUM(CASE WHEN p.moneda = 'VES' THEN p.monto_recibido ELSE 0 END), 0)
+     FROM pagos p
+     INNER JOIN tipo_de_pagos tp ON tp.idtipo_de_pagos = p.idtipo_de_pagos
+     WHERE tp.tipoPago <> 'Credito' AND DATE(p.fecha_pago) = CURRENT_DATE) AS total_ves_hoy,
     (SELECT COALESCE(SUM(saldo_deudor_bcv), 0) FROM creditos) AS creditos_pendientes_bcv;
 
 -- ==========================================
@@ -1344,5 +1361,19 @@ BEGIN
 END //
 
 DELIMITER ;
+
+-- ==========================================
+-- 9. MIGRACION: Actualizar vw_resumen_dashboard (si ya existe)
+-- Si la DB ya existe, ejecutar:
+-- DROP VIEW IF EXISTS vw_productos_mas_vendidos;
+-- DROP VIEW IF EXISTS vw_ventas_por_tipo_producto;
+-- DROP VIEW IF EXISTS vw_ventas_por_producto;
+-- DROP VIEW IF EXISTS vw_ventas_mensuales;
+-- DROP VIEW IF EXISTS vw_ventas_semanales;
+-- DROP VIEW IF EXISTS vw_ventas_diarias;
+-- DROP VIEW IF EXISTS vw_pagos_por_tipo;
+-- DROP VIEW IF EXISTS vw_resumen_dashboard;
+-- Luego recrear todas las vistas con las nuevas definiciones de arriba.
+-- ==========================================
 
 COMMIT;

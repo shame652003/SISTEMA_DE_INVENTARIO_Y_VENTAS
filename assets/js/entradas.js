@@ -11,6 +11,29 @@ $(function () {
     let margenVes = 0;
     let itemsPendientes = [];
     let tablaEntradas = null;
+    let paginaActual = 1;
+    const ITEMS_POR_PAGINA = 5;
+
+    /* ===== Helpers de formato ===== */
+
+    function formatearFecha(fecha) {
+        if (!fecha || fecha === '0000-00-00') return '-';
+        var meses = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        var parts = fecha.split('-');
+        if (parts.length !== 3) return fecha;
+        return parseInt(parts[2], 10) + ' de ' + meses[parseInt(parts[1], 10)] + ' de ' + parts[0];
+    }
+
+    function formatearHora(hora) {
+        if (!hora) return '-';
+        var parts = hora.split(':');
+        if (parts.length < 2) return hora;
+        var h = parseInt(parts[0], 10);
+        var m = parts[1];
+        var ampm = h >= 12 ? 'p.m.' : 'a.m.';
+        var h12 = h % 12 || 12;
+        return h12 + ':' + m + ' ' + ampm;
+    }
 
     /* ===== Inicialización ===== */
 
@@ -53,9 +76,11 @@ $(function () {
     function calcularPrecios(costoUsd) {
         const precioVentaUsd = costoUsd * (1 + margenUsd / 100);
         const precioVentaVes = costoUsd * (1 + margenVes / 100) * tasaBcv;
+        const precioVentaBcv = tasaBcv > 0 ? precioVentaVes / tasaBcv : 0;
         return {
             usd: precioVentaUsd.toFixed(2),
-            ves: precioVentaVes.toFixed(2)
+            ves: precioVentaVes.toFixed(2),
+            bcv: precioVentaBcv.toFixed(2)
         };
     }
 
@@ -64,6 +89,7 @@ $(function () {
         const precios = calcularPrecios(costo);
         $('#precio-venta-usd').val('$' + precios.usd);
         $('#precio-venta-ves').val('Bs. ' + precios.ves);
+        $('#precio-venta-bcv').val('$' + precios.bcv);
     }
 
     /* ===== Eventos de formulario ===== */
@@ -74,7 +100,14 @@ $(function () {
         $('#info-codigo').text(producto.codigo);
         $('#info-nombre').text(producto.text);
         $('#info-tipo').text(producto.tipo_producto);
-        $('#info-stock').text(parseFloat(producto.stock).toFixed(3));
+        $('#info-stock').text(Math.round(parseFloat(producto.stock)));
+
+        if (producto.imgproducto) {
+            $('#img-producto-entrada').attr('src', window.BASE_URL + '/' + producto.imgproducto);
+            $('#img-producto-entrada-container').removeClass('d-none');
+        } else {
+            $('#img-producto-entrada-container').addClass('d-none');
+        }
 
         if (producto.precio_costo_usd && parseFloat(producto.precio_costo_usd) > 0) {
             $('#costo-usd').val(producto.precio_costo_usd);
@@ -102,6 +135,8 @@ $(function () {
         $('#producto-id').val('');
         $('#info-producto').addClass('d-none');
         $('#form-entrada-container').addClass('d-none');
+        $('#img-producto-entrada-container').addClass('d-none');
+        $('#img-producto-entrada').attr('src', '');
         $('#select-producto').val(null).trigger('change');
     }
 
@@ -110,7 +145,7 @@ $(function () {
     $('#btn-agregar-item').on('click', function () {
         const idproducto = $('#producto-id').val();
         const costo = parseFloat($('#costo-usd').val());
-        const cantidad = parseFloat($('#cantidad').val());
+        const cantidad = parseInt($('#cantidad').val(), 10);
 
         if (!idproducto) {
             Swal.fire({ icon: 'warning', title: 'Atención', text: 'Selecciona un producto primero.' });
@@ -149,6 +184,7 @@ $(function () {
                 costo: costo,
                 cantidad: cantidad
             });
+            paginaActual = Math.ceil(itemsPendientes.length / ITEMS_POR_PAGINA);
             renderTablaItems();
         }
 
@@ -165,23 +201,46 @@ $(function () {
         renderTablaItems();
     });
 
+    $('#btn-pagina-anterior').on('click', function () {
+        if (paginaActual > 1) {
+            paginaActual--;
+            renderTablaItems();
+        }
+    });
+
+    $('#btn-pagina-siguiente').on('click', function () {
+        const totalPaginas = Math.ceil(itemsPendientes.length / ITEMS_POR_PAGINA);
+        if (paginaActual < totalPaginas) {
+            paginaActual++;
+            renderTablaItems();
+        }
+    });
+
     function renderTablaItems() {
+        const totalPaginas = Math.ceil(itemsPendientes.length / ITEMS_POR_PAGINA) || 1;
+        if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+
+        const inicio = (paginaActual - 1) * ITEMS_POR_PAGINA;
+        const pagina = itemsPendientes.slice(inicio, inicio + ITEMS_POR_PAGINA);
+
         const $tbody = $('#tabla-items-pendientes tbody');
         $tbody.empty();
 
         if (itemsPendientes.length === 0) {
             $tbody.html('<tr class="text-muted text-center"><td colspan="5">Sin productos agregados</td></tr>');
             $('#btn-procesar-entrada').prop('disabled', true);
+            $('#paginacion-items').addClass('d-none');
         } else {
-            itemsPendientes.forEach(function (item, index) {
+            pagina.forEach(function (item, i) {
+                var realIndex = inicio + i;
                 $tbody.append(`
                     <tr>
-                        <td>${index + 1}</td>
+                        <td>${realIndex + 1}</td>
                         <td><small><strong>${item.codigo}</strong><br>${item.nombre}</small></td>
                         <td class="text-end">$${item.costo.toFixed(2)}</td>
-                        <td class="text-end">${item.cantidad.toFixed(3)}</td>
+                        <td class="text-end">${item.cantidad}</td>
                         <td class="text-center">
-                            <button class="btn btn-sm btn-outline-danger btn-eliminar-item" data-index="${index}" title="Eliminar">
+                            <button class="btn btn-sm btn-outline-danger btn-eliminar-item" data-index="${realIndex}" title="Eliminar">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </td>
@@ -189,10 +248,19 @@ $(function () {
                 `);
             });
             $('#btn-procesar-entrada').prop('disabled', false);
+
+            if (itemsPendientes.length > ITEMS_POR_PAGINA) {
+                $('#paginacion-items').removeClass('d-none');
+                $('#pagina-info').text('Página ' + paginaActual + ' de ' + totalPaginas);
+                $('#btn-pagina-anterior').prop('disabled', paginaActual <= 1);
+                $('#btn-pagina-siguiente').prop('disabled', paginaActual >= totalPaginas);
+            } else {
+                $('#paginacion-items').addClass('d-none');
+            }
         }
 
         const totalCantidad = itemsPendientes.reduce((sum, item) => sum + item.cantidad, 0);
-        $('#total-cantidad').text(totalCantidad.toFixed(3));
+        $('#total-cantidad').text(totalCantidad);
         $('#total-items').text(itemsPendientes.length + ' ítem(s)');
     }
 
@@ -256,11 +324,11 @@ $(function () {
                 const rows = data.map(function (e) {
                     return [
                         e.idEntradaA,
-                        e.fecha,
-                        e.hora,
+                        formatearFecha(e.fecha),
+                        formatearHora(e.hora),
                         e.descripcion,
                         `<span class="badge bg-info">${e.items || 0}</span>`,
-                        `<span class="badge bg-success">${parseFloat(e.total_cantidad || 0).toFixed(3)}</span>`,
+                        `<span class="badge bg-success">${Math.round(parseFloat(e.total_cantidad || 0))}</span>`,
                         `<button class="btn btn-sm btn-outline-primary btn-ver-detalle" data-id="${e.idEntradaA}" title="Ver detalle">
                             <i class="bi bi-eye"></i>
                         </button>`
@@ -306,20 +374,25 @@ $(function () {
                 if (res.ok && res.data) {
                     const entrada = res.data;
                     $('#detalle-id').text(entrada.idEntradaA);
-                    $('#detalle-fecha').text(entrada.fecha);
-                    $('#detalle-hora').text(entrada.hora);
+                    $('#detalle-fecha').text(formatearFecha(entrada.fecha));
+                    $('#detalle-hora').text(formatearHora(entrada.hora));
                     $('#detalle-descripcion').text(entrada.descripcion);
 
                     const $tbody = $('#tabla-detalle-entrada tbody');
                     $tbody.empty();
                     (entrada.detalles || []).forEach(function (d) {
-                        const subtotal = (parseFloat(d.costo_unitario_usd || 0) * parseFloat(d.cantidad)).toFixed(2);
+                        var costoUsd = parseFloat(d.costo_unitario_usd || 0);
+                        var precios = calcularPrecios(costoUsd);
+                        var subtotal = (costoUsd * parseFloat(d.cantidad)).toFixed(2);
                         $tbody.append(`
                             <tr>
                                 <td>${d.codigo}</td>
                                 <td>${d.producto_nombre}</td>
-                                <td class="text-end">$${parseFloat(d.costo_unitario_usd || 0).toFixed(2)}</td>
-                                <td class="text-end">${parseFloat(d.cantidad).toFixed(3)}</td>
+                                <td class="text-end">$${costoUsd.toFixed(2)}</td>
+                                <td class="text-end">$${precios.usd}</td>
+                                <td class="text-end">Bs. ${precios.ves}</td>
+                                <td class="text-end">$${precios.bcv}</td>
+                                <td class="text-center"><span class="badge bg-primary fs-6">${Math.round(parseFloat(d.cantidad))}</span></td>
                                 <td class="text-end">$${subtotal}</td>
                             </tr>
                         `);
