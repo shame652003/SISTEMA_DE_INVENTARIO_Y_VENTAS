@@ -50,22 +50,31 @@ $tipos = $tipos ?? [];
                     <!-- Info Producto Seleccionado -->
                     <div id="info-producto" class="mb-4 d-none">
                         <div class="alert alert-info border-0 shadow-sm">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <small class="text-muted d-block">Código</small>
-                                    <strong id="info-codigo">-</strong>
+                            <div class="row g-3 align-items-center">
+                                <div class="col-md-3">
+                                    <div id="img-producto-salida-container" class="d-none text-center">
+                                        <img id="img-producto-salida" src="" alt="Imagen del producto" class="img-thumbnail" style="max-height: 120px; max-width: 100%; object-fit: contain;">
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <small class="text-muted d-block">Nombre</small>
-                                    <strong id="info-nombre">-</strong>
-                                </div>
-                                <div class="col-md-6">
-                                    <small class="text-muted d-block">Tipo</small>
-                                    <strong id="info-tipo">-</strong>
-                                </div>
-                                <div class="col-md-6">
-                                    <small class="text-muted d-block">Stock Actual</small>
-                                    <strong id="info-stock" class="text-success">-</strong>
+                                <div class="col-md-9">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">Código</small>
+                                            <strong id="info-codigo">-</strong>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">Nombre</small>
+                                            <strong id="info-nombre">-</strong>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">Tipo</small>
+                                            <strong id="info-tipo">-</strong>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">Stock Actual</small>
+                                            <strong id="info-stock" class="text-success">-</strong>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -89,7 +98,7 @@ $tipos = $tipos ?? [];
                                     <label for="cantidad" class="form-label">Cantidad <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="bi bi-box"></i></span>
-                                        <input type="number" class="form-control" id="cantidad" step="0.001" min="0.001" placeholder="0.000" required>
+                                        <input type="number" class="form-control" id="cantidad" step="1" min="1" placeholder="0" required>
                                     </div>
                                 </div>
                             </div>
@@ -145,6 +154,15 @@ $tipos = $tipos ?? [];
                                 </tr>
                             </tfoot>
                         </table>
+                    </div>
+                    <div id="paginacion-items" class="d-none d-flex justify-content-between align-items-center mt-2">
+                        <button class="btn btn-sm btn-outline-secondary" id="btn-pagina-anterior" disabled>
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <small class="text-muted" id="pagina-info"></small>
+                        <button class="btn btn-sm btn-outline-secondary" id="btn-pagina-siguiente" disabled>
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
                     </div>
                 </div>
             </div>

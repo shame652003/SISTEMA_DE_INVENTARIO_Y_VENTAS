@@ -98,11 +98,20 @@ $margenVes = $margenVes ?? null;
                                     <label for="cantidad" class="form-label">Cantidad <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="bi bi-box"></i></span>
-                                        <input type="number" class="form-control" id="cantidad" step="1" min="1" placeholder="0" required>
+                                        <input type="number" class="form-control" id="cantidad" step="1" min="0" placeholder="0" required>
                                     </div>
                                 </div>
                             </div>
-
+                            <div class="row g-3 mt-2">
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="checkbox-solo-precio">
+                                        <label class="form-check-label" for="checkbox-solo-precio">
+                                            Solo actualizar precio de costo (sin mover stock)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
                             <!-- Precios Calculados -->
                             <div class="row g-3 mt-3">
                                 <div class="col-md-4">

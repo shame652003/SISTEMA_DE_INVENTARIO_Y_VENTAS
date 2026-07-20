@@ -90,35 +90,59 @@ $tiposPago = $tiposPago ?? [];
                     </select>
 
                     <div id="info-producto" class="d-none mt-3">
-                        <div class="alert alert-secondary border-0 shadow-sm">
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <small class="text-muted d-block">Código</small>
-                                    <strong id="info-producto-codigo">-</strong>
+                        <div class="alert alert-light border shadow-sm">
+                            <div class="text-center mb-3">
+                                <div id="img-producto-venta-container" class="d-none mb-2">
+                                    <img id="img-producto-venta" src="" alt="Producto" class="rounded shadow-sm" style="max-height: 130px; max-width: 100%; object-fit: contain;">
                                 </div>
-                                <div class="col-md-8">
-                                    <small class="text-muted d-block">Nombre</small>
-                                    <strong id="info-producto-nombre">-</strong>
+                                <h5 class="fw-bold text-dark mb-0">
+                                    <span id="info-producto-codigo">-</span>
+                                    <span class="text-muted mx-2">—</span>
+                                    <span id="info-producto-nombre">-</span>
+                                </h5>
+                            </div>
+
+                            <hr class="my-2">
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-4">
+                                    <div class="border rounded-3 p-2 text-center bg-white">
+                                        <small class="text-muted d-block">Tipo</small>
+                                        <strong class="text-dark" id="info-producto-tipo">-</strong>
+                                    </div>
                                 </div>
-                                <div class="col-md-2">
-                                    <small class="text-muted d-block">Tipo</small>
-                                    <strong id="info-producto-tipo">-</strong>
+                                <div class="col-4">
+                                    <div class="border rounded-3 p-2 text-center bg-white">
+                                        <small class="text-muted d-block">Stock</small>
+                                        <strong id="info-producto-stock">-</strong>
+                                    </div>
                                 </div>
-                                <div class="col-md-2">
-                                    <small class="text-muted d-block">Stock</small>
-                                    <strong id="info-producto-stock">-</strong>
+                                <div class="col-4">
+                                    <div class="border rounded-3 p-2 text-center bg-white">
+                                        <small class="text-muted d-block">Marca</small>
+                                        <strong class="text-dark" id="info-producto-marca">-</strong>
+                                    </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <small class="text-muted d-block">Precio USD</small>
-                                    <strong id="info-producto-precio-usd">-</strong>
+                            </div>
+
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <div class="rounded-3 p-3 text-center bg-success bg-opacity-10 border border-success border-opacity-25">
+                                        <small class="text-success fw-semibold d-block">PRECIO USD</small>
+                                        <strong class="text-success fs-5" id="info-producto-precio-usd">-</strong>
+                                    </div>
                                 </div>
-                                <div class="col-md-2">
-                                    <small class="text-muted d-block">Precio VES</small>
-                                    <strong id="info-producto-precio-ves">-</strong>
+                                <div class="col-4">
+                                    <div class="rounded-3 p-3 text-center bg-warning bg-opacity-10 border border-warning border-opacity-25">
+                                        <small class="text-warning fw-semibold d-block">PRECIO VES</small>
+                                        <strong class="text-warning fs-5" id="info-producto-precio-ves">-</strong>
+                                    </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <small class="text-muted d-block">Precio $BCV</small>
-                                    <strong id="info-producto-precio-bcv">-</strong>
+                                <div class="col-4">
+                                    <div class="rounded-3 p-3 text-center bg-info bg-opacity-10 border border-info border-opacity-25">
+                                        <small class="text-info fw-semibold d-block">PRECIO $BCV</small>
+                                        <strong class="text-info fs-5" id="info-producto-precio-bcv">-</strong>
+                                    </div>
                                 </div>
                             </div>
                         </div>

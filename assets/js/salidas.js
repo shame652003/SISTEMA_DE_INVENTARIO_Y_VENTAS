@@ -1,6 +1,7 @@
 /**
  * salidas.js - Módulo de Salidas de Productos
  * Select2 + validación de stock + tabla dinámica multi-ítem + DataTable historial
+ * Paginación 5 en 5 + formato fecha/hora español
  */
 
 $(function () {
@@ -8,6 +9,29 @@ $(function () {
     let tablaSalidas = null;
     let itemsPendientes = [];
     let stockActual = 0;
+    let paginaActual = 1;
+    const ITEMS_POR_PAGINA = 5;
+
+    /* ===== Helpers de formato ===== */
+
+    function formatearFecha(fecha) {
+        if (!fecha || fecha === '0000-00-00') return '-';
+        var meses = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        var parts = fecha.split('-');
+        if (parts.length !== 3) return fecha;
+        return parseInt(parts[2], 10) + ' de ' + meses[parseInt(parts[1], 10)] + ' de ' + parts[0];
+    }
+
+    function formatearHora(hora) {
+        if (!hora) return '-';
+        var parts = hora.split(':');
+        if (parts.length < 2) return hora;
+        var h = parseInt(parts[0], 10);
+        var m = parts[1];
+        var ampm = h >= 12 ? 'p.m.' : 'a.m.';
+        var h12 = h % 12 || 12;
+        return h12 + ':' + m + ' ' + ampm;
+    }
 
     /* ===== Select2 ===== */
 
@@ -42,7 +66,14 @@ $(function () {
         $('#info-codigo').text(producto.codigo);
         $('#info-nombre').text(producto.text);
         $('#info-tipo').text(producto.tipo_producto);
-        $('#info-stock').text(stockActual.toFixed(3));
+        $('#info-stock').text(Math.round(stockActual));
+
+        if (producto.imgproducto) {
+            $('#img-producto-salida').attr('src', window.BASE_URL + '/' + producto.imgproducto);
+            $('#img-producto-salida-container').removeClass('d-none');
+        } else {
+            $('#img-producto-salida-container').addClass('d-none');
+        }
 
         $('#info-producto').removeClass('d-none').hide().fadeIn(300);
         $('#form-salida-container').removeClass('d-none').hide().fadeIn(400);
@@ -61,6 +92,8 @@ $(function () {
         $('#producto-id').val('');
         $('#info-producto').addClass('d-none');
         $('#form-salida-container').addClass('d-none');
+        $('#img-producto-salida-container').addClass('d-none');
+        $('#img-producto-salida').attr('src', '');
         $('#select-producto').val(null).trigger('change');
         stockActual = 0;
     }
@@ -70,7 +103,7 @@ $(function () {
     $('#btn-agregar-item').on('click', function () {
         const idproducto = $('#producto-id').val();
         const idTipoSalidaA = $('#idTipoSalidaA').val();
-        const cantidad = parseFloat($('#cantidad').val());
+        const cantidad = parseInt($('#cantidad').val(), 10);
         const descripcion = $('#descripcion').val().trim();
         const tipoNombre = $('#idTipoSalidaA option:selected').text();
 
@@ -90,7 +123,7 @@ $(function () {
             Swal.fire({
                 icon: 'error',
                 title: 'Stock insuficiente',
-                text: `Solo hay ${stockActual.toFixed(3)} unidades disponibles.`
+                text: `Solo hay ${Math.round(stockActual)} unidades disponibles.`
             });
             return;
         }
@@ -127,6 +160,7 @@ $(function () {
                 cantidad: cantidad,
                 descripcion: descripcion
             });
+            paginaActual = Math.ceil(itemsPendientes.length / ITEMS_POR_PAGINA);
             renderTablaItems();
         }
 
@@ -143,23 +177,46 @@ $(function () {
         renderTablaItems();
     });
 
+    $('#btn-pagina-anterior').on('click', function () {
+        if (paginaActual > 1) {
+            paginaActual--;
+            renderTablaItems();
+        }
+    });
+
+    $('#btn-pagina-siguiente').on('click', function () {
+        const totalPaginas = Math.ceil(itemsPendientes.length / ITEMS_POR_PAGINA);
+        if (paginaActual < totalPaginas) {
+            paginaActual++;
+            renderTablaItems();
+        }
+    });
+
     function renderTablaItems() {
+        const totalPaginas = Math.ceil(itemsPendientes.length / ITEMS_POR_PAGINA) || 1;
+        if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+
+        const inicio = (paginaActual - 1) * ITEMS_POR_PAGINA;
+        const pagina = itemsPendientes.slice(inicio, inicio + ITEMS_POR_PAGINA);
+
         const $tbody = $('#tabla-items-pendientes tbody');
         $tbody.empty();
 
         if (itemsPendientes.length === 0) {
             $tbody.html('<tr class="text-muted text-center"><td colspan="5">Sin productos agregados</td></tr>');
             $('#btn-procesar-salida').prop('disabled', true);
+            $('#paginacion-items').addClass('d-none');
         } else {
-            itemsPendientes.forEach(function (item, index) {
+            pagina.forEach(function (item, i) {
+                var realIndex = inicio + i;
                 $tbody.append(`
                     <tr>
-                        <td>${index + 1}</td>
+                        <td>${realIndex + 1}</td>
                         <td><small><strong>${item.codigo}</strong><br>${item.nombre}</small></td>
                         <td><small>${item.tipoNombre}</small></td>
-                        <td class="text-end">${item.cantidad.toFixed(3)}</td>
+                        <td class="text-end">${item.cantidad}</td>
                         <td class="text-center">
-                            <button class="btn btn-sm btn-outline-danger btn-eliminar-item" data-index="${index}" title="Eliminar">
+                            <button class="btn btn-sm btn-outline-danger btn-eliminar-item" data-index="${realIndex}" title="Eliminar">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </td>
@@ -167,10 +224,19 @@ $(function () {
                 `);
             });
             $('#btn-procesar-salida').prop('disabled', false);
+
+            if (itemsPendientes.length > ITEMS_POR_PAGINA) {
+                $('#paginacion-items').removeClass('d-none');
+                $('#pagina-info').text('Página ' + paginaActual + ' de ' + totalPaginas);
+                $('#btn-pagina-anterior').prop('disabled', paginaActual <= 1);
+                $('#btn-pagina-siguiente').prop('disabled', paginaActual >= totalPaginas);
+            } else {
+                $('#paginacion-items').addClass('d-none');
+            }
         }
 
         const totalCantidad = itemsPendientes.reduce((sum, item) => sum + item.cantidad, 0);
-        $('#total-cantidad').text(totalCantidad.toFixed(3));
+        $('#total-cantidad').text(totalCantidad);
         $('#total-items').text(itemsPendientes.length + ' ítem(s)');
     }
 
@@ -234,11 +300,11 @@ $(function () {
                     const badgeClass = s.tipoSalida === 'Perdidas' ? 'bg-danger' : 'bg-info';
                     return [
                         s.idSalidaA,
-                        s.fecha,
-                        s.hora,
+                        formatearFecha(s.fecha),
+                        formatearHora(s.hora),
                         `<strong>${s.codigo}</strong><br><small>${s.producto_nombre}</small>`,
                         `<span class="badge ${badgeClass}">${s.tipoSalida}</span>`,
-                        parseFloat(s.cantidad).toFixed(3),
+                        Math.round(parseFloat(s.cantidad)),
                         s.descripcion || '-'
                     ];
                 });

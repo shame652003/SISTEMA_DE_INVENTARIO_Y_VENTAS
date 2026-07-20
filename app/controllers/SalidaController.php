@@ -71,39 +71,51 @@ class SalidaController extends Controller
 
         $salida = new Salida();
 
+        $idsVistos = [];
+        foreach ($items as $i => $item) {
+            $idproducto = (int) ($item['idproducto'] ?? 0);
+            $idTipoSalidaA = (int) ($item['idTipoSalidaA'] ?? 0);
+            $cantidad = (float) ($item['cantidad'] ?? 0);
+            $descripcion = trim($item['descripcion'] ?? '');
+
+            if ($idproducto <= 0 || $idTipoSalidaA <= 0 || $cantidad <= 0) {
+                $this->json(['ok' => false, 'mensaje' => 'Datos inválidos en el producto #' . ($i + 1) . '.']);
+                return;
+            }
+
+            if (empty($descripcion)) {
+                $this->json(['ok' => false, 'mensaje' => 'La descripción es obligatoria. Revisa el producto #' . ($i + 1) . '.']);
+                return;
+            }
+
+            if (in_array($idproducto, $idsVistos)) {
+                $this->json(['ok' => false, 'mensaje' => 'Producto ID ' . $idproducto . ' duplicado en la lista.']);
+                return;
+            }
+            $idsVistos[] = $idproducto;
+
+            $producto = $salida->obtenerProductoInfo($idproducto);
+            if (!$producto) {
+                $this->json(['ok' => false, 'mensaje' => 'Producto ID ' . $idproducto . ' no encontrado o inactivo.']);
+                return;
+            }
+
+            if ($cantidad > (float) $producto['stock']) {
+                $stockDisponible = (int) $producto['stock'];
+                $this->json(['ok' => false, 'mensaje' => 'Stock insuficiente para ' . $producto['codigo'] . '. Disponible: ' . $stockDisponible . '.']);
+                return;
+            }
+        }
+
         try {
             $procesados = 0;
 
             foreach ($items as $item) {
-                $idproducto = (int) ($item['idproducto'] ?? 0);
-                $idTipoSalidaA = (int) ($item['idTipoSalidaA'] ?? 0);
-                $cantidad = (float) ($item['cantidad'] ?? 0);
-                $descripcion = trim($item['descripcion'] ?? '');
-
-                if ($idproducto <= 0 || $idTipoSalidaA <= 0 || $cantidad <= 0) {
-                    throw new \Exception('Datos inválidos en un producto.');
-                }
-
-                if (empty($descripcion)) {
-                    throw new \Exception('La descripción es obligatoria para todos los productos.');
-                }
-
-                $producto = $salida->obtenerProductoInfo($idproducto);
-                if (!$producto) {
-                    throw new \Exception('Producto no encontrado o inactivo.');
-                }
-
-                if ($cantidad > (float) $producto['stock']) {
-                    throw new \Exception(
-                        'Stock insuficiente para ' . $producto['codigo'] . '. Disponible: ' . number_format((float) $producto['stock'], 3)
-                    );
-                }
-
                 $datos = [
-                    'idproducto' => $idproducto,
-                    'idTipoSalidaA' => $idTipoSalidaA,
-                    'cantidad' => $cantidad,
-                    'descripcion' => $descripcion,
+                    'idproducto' => (int) ($item['idproducto'] ?? 0),
+                    'idTipoSalidaA' => (int) ($item['idTipoSalidaA'] ?? 0),
+                    'cantidad' => (float) ($item['cantidad'] ?? 0),
+                    'descripcion' => trim($item['descripcion'] ?? ''),
                 ];
 
                 $salida->crear($datos);

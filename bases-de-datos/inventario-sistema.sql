@@ -174,7 +174,7 @@ VALUES
             ON UPDATE CASCADE,
         CONSTRAINT fk_detalle_entrada_encabezado FOREIGN KEY (idEntradaA) REFERENCES entradaproducto(idEntradaA)
             ON UPDATE CASCADE ON DELETE CASCADE,
-        CHECK (cantidad > 0),
+        CHECK (cantidad >= 0),
         CHECK (costo_unitario_usd IS NULL OR costo_unitario_usd >= 0)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

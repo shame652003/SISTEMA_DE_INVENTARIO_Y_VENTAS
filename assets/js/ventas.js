@@ -247,6 +247,14 @@ $(function () {
                     $('#info-producto-codigo').text(p.codigo || 'N/A');
                     $('#info-producto-nombre').text(p.nombre);
                     $('#info-producto-tipo').text(p.tipo_producto || 'N/A');
+                    $('#info-producto-marca').text(p.marca || 'Sin marca');
+
+                    if (p.imgproducto) {
+                        $('#img-producto-venta').attr('src', window.BASE_URL + '/' + p.imgproducto);
+                        $('#img-producto-venta-container').removeClass('d-none');
+                    } else {
+                        $('#img-producto-venta-container').addClass('d-none');
+                    }
 
                     var stockClass = 'text-success';
                     if (stock === 0) stockClass = 'text-danger';
@@ -288,6 +296,8 @@ $(function () {
         $('#preview-subtotal-bcv').val('$0.00');
         $('#info-producto').addClass('d-none');
         $('#form-carrito-container').addClass('d-none');
+        $('#img-producto-venta-container').addClass('d-none');
+        $('#img-producto-venta').attr('src', '');
         $('#select-producto').val(null).trigger('change');
     }
 
@@ -448,6 +458,15 @@ $(function () {
 
     /* ===== Pagos ===== */
 
+    function tiposPagoPorMoneda() {
+        var usdPermitidos = ['binance usdt', 'credito', 'efectivo', 'zelle'];
+        var vesPermitidos = ['punto', 'transferencia', 'efectivo', 'biopago', 'credito'];
+        var permitidos = monedaGlobal === 'USD' ? usdPermitidos : vesPermitidos;
+        return tiposPago.filter(function (tp) {
+            return permitidos.indexOf(tp.tipoPago.toLowerCase()) >= 0;
+        });
+    }
+
     /* --- Moneda Global --- */
 
     $('#moneda-usd, #moneda-ves').on('change', function () {
@@ -520,9 +539,10 @@ $(function () {
     function agregarFilaPago() {
         var totalSegunMoneda = monedaGlobal === 'USD' ? getTotalUsdCarrito() : getTotalVesCarrito();
         var nuevoTotal = pagos.length + 1;
+        var tiposFiltrados = tiposPagoPorMoneda();
 
         pagos.push({
-            idtipo_de_pagos: tiposPago.length > 0 ? tiposPago[0].idtipo_de_pagos : 0,
+            idtipo_de_pagos: tiposFiltrados.length > 0 ? tiposFiltrados[0].idtipo_de_pagos : 0,
             moneda: monedaGlobal,
             monto_recibido: 0,
             referencia: ''
@@ -564,7 +584,8 @@ $(function () {
             var $row = $('<div class="mb-3 pago-fila border rounded p-3 bg-light" data-index="' + index + '"></div>');
 
             var $btnGroup = $('<div class="btn-group btn-group-sm d-flex flex-wrap w-100" role="group"></div>');
-            tiposPago.forEach(function (tp) {
+            var tiposFiltrados = tiposPagoPorMoneda();
+            tiposFiltrados.forEach(function (tp) {
                 var esCredito = tp.tipoPago.toLowerCase() === 'credito';
                 var radioId = 'pago-tipo-' + index + '-' + tp.idtipo_de_pagos;
                 var checked = pago.idtipo_de_pagos == tp.idtipo_de_pagos ? ' checked' : '';
@@ -839,6 +860,8 @@ $(function () {
         $('#info-cliente').addClass('d-none');
         $('#info-producto').addClass('d-none');
         $('#form-carrito-container').addClass('d-none');
+        $('#img-producto-venta-container').addClass('d-none');
+        $('#img-producto-venta').attr('src', '');
         $('#pagos-container').empty();
         $('#pagos-vacio').removeClass('d-none');
         $('#resumen-pagos').addClass('d-none');

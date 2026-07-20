@@ -85,9 +85,12 @@ class Venta extends Model
     {
         $q = '%' . $q . '%';
         return $this->fetchAll(
-            "SELECT p.idproducto AS id, CONCAT(p.codigo, ' - ', p.nombre) AS text,
+            "SELECT p.idproducto AS id,
+                    CONCAT(p.codigo, ' - ', p.nombre,
+                           IF(p.marca IS NOT NULL AND p.marca != '', CONCAT(' [', p.marca, ']'), '')) AS text,
                     p.codigo, p.nombre, p.marca, p.stock, p.stock_minimo,
                     p.precio_venta_usd, p.precio_venta_ves, p.precio_costo_usd,
+                    p.imgproducto,
                     tp.tipo AS tipo_producto
              FROM producto p
              INNER JOIN tipo_productos tp ON tp.idTipoA = p.idTipoA
@@ -136,6 +139,7 @@ class Venta extends Model
         return $this->fetch(
             "SELECT p.idproducto, p.codigo, p.nombre, p.marca, p.stock, p.stock_minimo,
                     p.precio_costo_usd, p.precio_venta_usd, p.precio_venta_ves,
+                    p.imgproducto,
                     tp.tipo AS tipo_producto
              FROM producto p
              INNER JOIN tipo_productos tp ON tp.idTipoA = p.idTipoA

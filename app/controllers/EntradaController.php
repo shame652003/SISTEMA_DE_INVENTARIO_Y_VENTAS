@@ -118,6 +118,35 @@ class EntradaController extends Controller
 
         $entrada = new Entrada();
 
+        $idsVistos = [];
+        foreach ($items as $i => $item) {
+            $idproducto = (int) ($item['idproducto'] ?? 0);
+            $cantidad = (float) ($item['cantidad'] ?? 0);
+            $costo = isset($item['costo']) ? (float) $item['costo'] : null;
+
+            if ($idproducto <= 0 || $cantidad < 0) {
+                $this->json(['ok' => false, 'mensaje' => 'Datos inválidos en el producto #' . ($i + 1) . '.']);
+                return;
+            }
+
+            if (in_array($idproducto, $idsVistos)) {
+                $this->json(['ok' => false, 'mensaje' => 'Producto ID ' . $idproducto . ' duplicado en la lista.']);
+                return;
+            }
+            $idsVistos[] = $idproducto;
+
+            if ($costo !== null && $costo < 0) {
+                $this->json(['ok' => false, 'mensaje' => 'El costo del producto #' . ($i + 1) . ' no puede ser negativo.']);
+                return;
+            }
+
+            $producto = $entrada->obtenerProductoInfo($idproducto);
+            if (!$producto) {
+                $this->json(['ok' => false, 'mensaje' => 'Producto ID ' . $idproducto . ' no encontrado o inactivo.']);
+                return;
+            }
+        }
+
         try {
             $idEntrada = $entrada->crearEncabezado(['descripcion' => $descripcion]);
 
@@ -125,10 +154,6 @@ class EntradaController extends Controller
                 $idproducto = (int) ($item['idproducto'] ?? 0);
                 $cantidad = (float) ($item['cantidad'] ?? 0);
                 $costo = isset($item['costo']) ? (float) $item['costo'] : null;
-
-                if ($idproducto <= 0 || $cantidad <= 0) {
-                    throw new \Exception('Datos inválidos en un producto.');
-                }
 
                 $entrada->crearDetalle($idEntrada, $idproducto, $cantidad, $costo);
             }

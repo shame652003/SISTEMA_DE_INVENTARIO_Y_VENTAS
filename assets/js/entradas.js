@@ -130,6 +130,14 @@ $(function () {
         limpiarFormulario();
     });
 
+    $('#checkbox-solo-precio').on('change', function () {
+        if ($(this).is(':checked')) {
+            $('#cantidad').val(0).prop('disabled', true);
+        } else {
+            $('#cantidad').val('').prop('disabled', false);
+        }
+    });
+
     function limpiarFormulario() {
         $('#form-entrada')[0].reset();
         $('#producto-id').val('');
@@ -137,6 +145,8 @@ $(function () {
         $('#form-entrada-container').addClass('d-none');
         $('#img-producto-entrada-container').addClass('d-none');
         $('#img-producto-entrada').attr('src', '');
+        $('#checkbox-solo-precio').prop('checked', false);
+        $('#cantidad').prop('disabled', false).val('');
         $('#select-producto').val(null).trigger('change');
     }
 
@@ -146,6 +156,7 @@ $(function () {
         const idproducto = $('#producto-id').val();
         const costo = parseFloat($('#costo-usd').val());
         const cantidad = parseInt($('#cantidad').val(), 10);
+        const soloPrecio = $('#checkbox-solo-precio').is(':checked');
 
         if (!idproducto) {
             Swal.fire({ icon: 'warning', title: 'Atención', text: 'Selecciona un producto primero.' });
@@ -155,7 +166,7 @@ $(function () {
             Swal.fire({ icon: 'warning', title: 'Atención', text: 'El costo debe ser mayor a 0.' });
             return;
         }
-        if (!cantidad || cantidad <= 0) {
+        if (!soloPrecio && (!cantidad || cantidad <= 0)) {
             Swal.fire({ icon: 'warning', title: 'Atención', text: 'La cantidad debe ser mayor a 0.' });
             return;
         }
@@ -233,12 +244,15 @@ $(function () {
         } else {
             pagina.forEach(function (item, i) {
                 var realIndex = inicio + i;
+                var colCantidad = item.cantidad === 0
+                    ? '<span class="badge bg-warning text-dark">Solo precio</span>'
+                    : item.cantidad;
                 $tbody.append(`
                     <tr>
                         <td>${realIndex + 1}</td>
                         <td><small><strong>${item.codigo}</strong><br>${item.nombre}</small></td>
                         <td class="text-end">$${item.costo.toFixed(2)}</td>
-                        <td class="text-end">${item.cantidad}</td>
+                        <td class="text-center">${colCantidad}</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-danger btn-eliminar-item" data-index="${realIndex}" title="Eliminar">
                                 <i class="bi bi-trash"></i>
