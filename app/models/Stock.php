@@ -21,6 +21,8 @@ class Stock extends Model
             $sql .= " AND p.stock > 0 AND p.stock <= p.stock_minimo";
         } elseif ($filtro === 'agotado') {
             $sql .= " AND p.stock = 0";
+        } elseif ($filtro === 'disponible') {
+            $sql .= " AND p.stock > 0";
         }
 
         $sql .= " ORDER BY p.nombre";
@@ -32,7 +34,9 @@ class Stock extends Model
     {
         $q = '%' . $q . '%';
         return $this->fetchAll(
-            "SELECT p.idproducto AS id, CONCAT(p.codigo, ' - ', p.nombre) AS text,
+            "SELECT p.idproducto AS id,
+                    CONCAT(p.codigo, ' - ', p.nombre,
+                           IF(p.marca IS NOT NULL AND p.marca != '', CONCAT(' [', p.marca, ']'), '')) AS text,
                     p.codigo, p.nombre, p.marca, p.imgproducto, p.stock,
                     tp.tipo AS tipo_producto
              FROM {$this->table} p

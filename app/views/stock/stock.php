@@ -48,6 +48,9 @@ use App\Core\UrlCipher;
                                 <button type="button" class="btn btn-outline-primary active" data-filtro="todos">
                                     <i class="bi bi-list-ul me-1"></i> Todos
                                 </button>
+                                <button type="button" class="btn btn-outline-success" data-filtro="disponible">
+                                    <i class="bi bi-check-circle me-1"></i> Disponibles
+                                </button>
                                 <button type="button" class="btn btn-outline-warning" data-filtro="bajo">
                                     <i class="bi bi-exclamation-triangle me-1"></i> Stock Bajo
                                 </button>
@@ -70,8 +73,11 @@ use App\Core\UrlCipher;
                     <div class="row align-items-center">
                         <!-- Imagen centrada -->
                         <div class="col-md-4 text-center mb-3 mb-md-0">
-                            <div id="detalle-imagen" class="rounded-circle bg-white p-2 d-inline-block shadow-lg" style="width: 150px; height: 150px; overflow: hidden;">
-                                <img src="" alt="Producto" class="img-fluid w-100 h-100" style="object-fit: cover;">
+                            <div id="detalle-imagen" class="rounded-3 bg-white d-inline-flex align-items-center justify-content-center shadow-lg" style="width: 160px; height: 160px; overflow: hidden;">
+                                <img src="" alt="Producto" class="d-none" style="width: 100%; height: 100%; object-fit: contain; padding: 8px;">
+                                <div id="detalle-imagen-icon" class="text-muted">
+                                    <i class="bi bi-box-seam" style="font-size: 4rem;"></i>
+                                </div>
                             </div>
                         </div>
                         <!-- Información del producto -->

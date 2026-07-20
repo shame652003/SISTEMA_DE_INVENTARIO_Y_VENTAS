@@ -51,8 +51,11 @@ $(function () {
                     // Imagen
                     if (p.imgproducto) {
                         $('#detalle-imagen img').attr('src', `${window.BASE_URL}/${p.imgproducto}`);
+                        $('#detalle-imagen-icon').addClass('d-none');
+                        $('#detalle-imagen img').removeClass('d-none');
                     } else {
-                        $('#detalle-imagen img').attr('src', `${window.BASE_URL}/assets/img/placeholder-product.svg`);
+                        $('#detalle-imagen img').addClass('d-none').attr('src', '');
+                        $('#detalle-imagen-icon').removeClass('d-none');
                     }
 
                     // Información del producto
@@ -64,11 +67,11 @@ $(function () {
                     // Stock con color
                     let stockHtml = '';
                     if (stock === 0) {
-                        stockHtml = `<span class="badge bg-danger fs-5">${stock.toFixed(3)}</span>`;
+                        stockHtml = `<span class="badge bg-danger fs-5">${Math.round(stock)}</span>`;
                     } else if (stock <= stockMin) {
-                        stockHtml = `<span class="badge bg-warning text-dark fs-5">${stock.toFixed(3)}</span>`;
+                        stockHtml = `<span class="badge bg-warning text-dark fs-5">${Math.round(stock)}</span>`;
                     } else {
-                        stockHtml = `<span class="badge bg-success fs-5">${stock.toFixed(3)}</span>`;
+                        stockHtml = `<span class="badge bg-success fs-5">${Math.round(stock)}</span>`;
                     }
                     $('#detalle-stock').html(stockHtml);
 
@@ -125,7 +128,7 @@ $(function () {
                     // Imagen
                     let imgHtml = '';
                     if (p.imgproducto) {
-                        imgHtml = `<img src="${window.BASE_URL}/${p.imgproducto}" class="rounded" style="width:50px;height:50px;object-fit:cover;">`;
+                        imgHtml = `<img src="${window.BASE_URL}/${p.imgproducto}" class="rounded" style="width:50px;height:50px;object-fit:contain;">`;
                     } else {
                         imgHtml = `<span class="badge bg-secondary">Sin imagen</span>`;
                     }
@@ -133,11 +136,11 @@ $(function () {
                     // Stock con color
                     let stockHtml = '';
                     if (stock === 0) {
-                        stockHtml = `<span class="badge bg-danger fs-6">${stock.toFixed(3)}</span>`;
+                        stockHtml = `<span class="badge bg-danger fs-6">${Math.round(stock)}</span>`;
                     } else if (stock <= stockMin) {
-                        stockHtml = `<span class="badge bg-warning text-dark fs-6">${stock.toFixed(3)}</span>`;
+                        stockHtml = `<span class="badge bg-warning text-dark fs-6">${Math.round(stock)}</span>`;
                     } else {
-                        stockHtml = `<span class="badge bg-success fs-6">${stock.toFixed(3)}</span>`;
+                        stockHtml = `<span class="badge bg-success fs-6">${Math.round(stock)}</span>`;
                     }
 
                     // Precios resaltados
