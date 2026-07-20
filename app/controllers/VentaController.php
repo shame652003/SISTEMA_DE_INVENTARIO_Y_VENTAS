@@ -156,6 +156,54 @@ class VentaController extends Controller
 
         $venta = new Venta();
 
+        $cliente = $venta->obtenerClienteInfo($cedulaCliente);
+        if (!$cliente) {
+            $this->json(['ok' => false, 'mensaje' => 'Cliente no encontrado o inactivo.']);
+            return;
+        }
+
+        $idsVistos = [];
+        foreach ($items as $i => $item) {
+            $idproducto = (int) ($item['idproducto'] ?? 0);
+            $cantidad = (float) ($item['cantidad'] ?? 0);
+
+            if ($idproducto <= 0 || $cantidad <= 0) {
+                $this->json(['ok' => false, 'mensaje' => 'Datos inválidos en el producto #' . ($i + 1) . ' del carrito.']);
+                return;
+            }
+
+            if (in_array($idproducto, $idsVistos)) {
+                $this->json(['ok' => false, 'mensaje' => 'Producto ID ' . $idproducto . ' duplicado en el carrito.']);
+                return;
+            }
+            $idsVistos[] = $idproducto;
+
+            $producto = $venta->obtenerProductoInfo($idproducto);
+            if (!$producto) {
+                $this->json(['ok' => false, 'mensaje' => 'Producto ID ' . $idproducto . ' no encontrado o inactivo.']);
+                return;
+            }
+            if ((float) $producto['stock'] < $cantidad) {
+                $this->json(['ok' => false, 'mensaje' => 'Stock insuficiente para "' . $producto['nombre'] . '". Disponible: ' . (int) $producto['stock'] . '.']);
+                return;
+            }
+        }
+
+        foreach ($pagos as $j => $pago) {
+            $idTipoPago = (int) ($pago['idtipo_de_pagos'] ?? 0);
+            $monto = (float) ($pago['monto_recibido'] ?? 0);
+            $moneda = strtoupper($pago['moneda'] ?? 'USD');
+
+            if ($idTipoPago <= 0 || $monto <= 0) {
+                $this->json(['ok' => false, 'mensaje' => 'Datos inválidos en el método de pago #' . ($j + 1) . '.']);
+                return;
+            }
+            if (!in_array($moneda, ['USD', 'VES'])) {
+                $this->json(['ok' => false, 'mensaje' => 'Moneda inválida en el método de pago #' . ($j + 1) . '.']);
+                return;
+            }
+        }
+
         try {
             $idVenta = $venta->crearVenta([
                 'cedula_cliente' => $cedulaCliente,
@@ -166,24 +214,9 @@ class VentaController extends Controller
             ]);
 
             foreach ($items as $item) {
-                $idproducto = (int) ($item['idproducto'] ?? 0);
-                $cantidad = (float) ($item['cantidad'] ?? 0);
-
-                if ($idproducto <= 0 || $cantidad <= 0) {
-                    throw new \Exception('Datos inválidos en un producto del carrito.');
-                }
-
-                $producto = $venta->obtenerProductoInfo($idproducto);
-                if (!$producto) {
-                    throw new \Exception('Producto ID ' . $idproducto . ' no encontrado.');
-                }
-                if ((float) $producto['stock'] < $cantidad) {
-                    throw new \Exception('Stock insuficiente para "' . $producto['nombre'] . '". Disponible: ' . (float) $producto['stock']);
-                }
-
                 $venta->crearDetalle($idVenta, [
-                    'idproducto' => $idproducto,
-                    'cantidad' => $cantidad,
+                    'idproducto' => (int) ($item['idproducto'] ?? 0),
+                    'cantidad' => (float) ($item['cantidad'] ?? 0),
                     'costo_unitario_usd' => $item['costo_unitario_usd'] ?? 0,
                     'precio_unitario_usd' => $item['precio_unitario_usd'] ?? 0,
                     'precio_unitario_ves' => $item['precio_unitario_ves'] ?? 0,
@@ -196,21 +229,10 @@ class VentaController extends Controller
             }
 
             foreach ($pagos as $pago) {
-                $idTipoPago = (int) ($pago['idtipo_de_pagos'] ?? 0);
-                $moneda = strtoupper($pago['moneda'] ?? 'USD');
-                $monto = (float) ($pago['monto_recibido'] ?? 0);
-
-                if ($idTipoPago <= 0 || $monto <= 0) {
-                    throw new \Exception('Datos inválidos en un método de pago.');
-                }
-                if (!in_array($moneda, ['USD', 'VES'])) {
-                    $moneda = 'USD';
-                }
-
                 $venta->crearPago($idVenta, [
-                    'idtipo_de_pagos' => $idTipoPago,
-                    'moneda' => $moneda,
-                    'monto_recibido' => $monto,
+                    'idtipo_de_pagos' => (int) ($pago['idtipo_de_pagos'] ?? 0),
+                    'moneda' => strtoupper($pago['moneda'] ?? 'USD'),
+                    'monto_recibido' => (float) ($pago['monto_recibido'] ?? 0),
                     'monto_bcv' => $pago['monto_bcv'] ?? 0,
                     'referencia' => $pago['referencia'] ?? null,
                 ]);

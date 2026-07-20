@@ -14,6 +14,7 @@ $(function () {
     var clienteSeleccionado = null;
     var esCredito = false;
     var monedaGlobal = 'USD';
+    var imagenProductoActual = '';
 
     var formatoUsd = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     var formatoVes = new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -250,9 +251,11 @@ $(function () {
                     $('#info-producto-marca').text(p.marca || 'Sin marca');
 
                     if (p.imgproducto) {
-                        $('#img-producto-venta').attr('src', window.BASE_URL + '/' + p.imgproducto);
+                        imagenProductoActual = window.BASE_URL + '/' + p.imgproducto;
+                        $('#img-producto-venta').attr('src', imagenProductoActual);
                         $('#img-producto-venta-container').removeClass('d-none');
                     } else {
+                        imagenProductoActual = '';
                         $('#img-producto-venta-container').addClass('d-none');
                     }
 
@@ -298,6 +301,7 @@ $(function () {
         $('#form-carrito-container').addClass('d-none');
         $('#img-producto-venta-container').addClass('d-none');
         $('#img-producto-venta').attr('src', '');
+        imagenProductoActual = '';
         $('#select-producto').val(null).trigger('change');
     }
 
@@ -358,7 +362,8 @@ $(function () {
                 precio_unitario_usd: precioUsd,
                 precio_unitario_ves: precioVes,
                 precio_unitario_bcv: calcPrecioBcv(precioVes),
-                stock: stock
+                stock: stock,
+                imgproducto: imagenProductoActual
             });
         }
 
@@ -393,11 +398,13 @@ $(function () {
     });
 
     function renderCarrito() {
-        var $tbody = $('#tabla-carrito tbody');
-        $tbody.empty();
+        var $container = $('#carrito-container');
+        $container.empty();
 
         if (carrito.length === 0) {
-            $tbody.html('<tr class="text-muted text-center"><td colspan="10">Sin productos en el carrito</td></tr>');
+            $container.html('<p class="text-muted text-center mb-0 py-3" id="carrito-vacio">Sin productos en el carrito</p>');
+            $('#carrito-footer').addClass('d-none');
+            $('#carrito-contador').text('0');
             $('#btn-procesar-venta').prop('disabled', true);
             $('#btn-agregar-pago').prop('disabled', true);
             $('#total-usd').text('$0.00');
@@ -415,27 +422,64 @@ $(function () {
                 totalUsd += subtotalUsd;
                 totalVes += subtotalVes;
 
-                $tbody.append(
-                    '<tr>' +
-                        '<td>' + (index + 1) + '</td>' +
-                        '<td><small><strong>' + item.codigo + '</strong><br>' + item.nombre + '</small></td>' +
-                        '<td class="text-center"><input type="number" class="form-control form-control-sm input-cantidad-carrito" data-index="' + index + '" value="' + item.cantidad + '" step="1" min="1" style="width:65px"></td>' +
-                        '<td class="text-end">$' + formatoUsd.format(item.precio_unitario_usd) + '</td>' +
-                        '<td class="text-end">Bs. ' + formatoVes.format(item.precio_unitario_ves) + '</td>' +
-                        '<td class="text-end">$' + formatoUsd.format(precioBcv) + '</td>' +
-                        '<td class="text-end">$' + formatoUsd.format(subtotalUsd) + '</td>' +
-                        '<td class="text-end">Bs. ' + formatoVes.format(subtotalVes) + '</td>' +
-                        '<td class="text-end">$' + formatoUsd.format(subtotalBcv) + '</td>' +
-                        '<td class="text-center"><button class="btn btn-sm btn-outline-danger btn-eliminar-carrito" data-index="' + index + '" title="Eliminar"><i class="bi bi-trash"></i></button></td>' +
-                    '</tr>'
+                var imgTag = item.imgproducto
+                    ? '<div class="me-3 flex-shrink-0" style="width:65px; height:65px;"><img src="' + item.imgproducto + '" alt="" class="rounded border" style="width:100%; height:100%; object-fit:contain;"></div>'
+                    : '';
+
+                var $card = $(
+                    '<div class="border rounded-3 p-3 mb-2 bg-white shadow-sm">' +
+                        '<div class="d-flex align-items-start">' +
+                            imgTag +
+                            '<div class="flex-grow-1">' +
+                                '<div class="d-flex align-items-start justify-content-between mb-2">' +
+                                    '<div class="flex-grow-1">' +
+                                        '<span class="badge bg-secondary me-2">' + (index + 1) + '</span>' +
+                                        '<strong>' + item.codigo + '</strong>' +
+                                        '<span class="text-muted mx-1">—</span>' +
+                                        '<span>' + item.nombre + '</span>' +
+                                    '</div>' +
+                                    '<button class="btn btn-sm btn-outline-danger btn-eliminar-carrito ms-2 flex-shrink-0" data-index="' + index + '" title="Eliminar">' +
+                                        '<i class="bi bi-trash"></i>' +
+                                    '</button>' +
+                                '</div>' +
+                                '<div class="mb-2">' +
+                                    '<span class="text-muted me-1">P.U.:</span>' +
+                                    '<span class="text-success">$' + formatoUsd.format(item.precio_unitario_usd) + '</span>' +
+                                    ' &nbsp;|&nbsp; ' +
+                                    '<span class="text-dark fw-semibold">Bs. ' + formatoVes.format(item.precio_unitario_ves) + '</span>' +
+                                    ' &nbsp;|&nbsp; ' +
+                                    '<span class="text-info">$' + formatoUsd.format(precioBcv) + '</span>' +
+                                '</div>' +
+                                '<div class="row align-items-center g-2">' +
+                                    '<div class="col-auto">' +
+                                        '<label class="form-label small mb-0">Cant:</label>' +
+                                    '</div>' +
+                                    '<div class="col-auto" style="width:70px">' +
+                                        '<input type="number" class="form-control form-control-sm input-cantidad-carrito" data-index="' + index + '" value="' + item.cantidad + '" step="1" min="1">' +
+                                    '</div>' +
+                                    '<div class="col text-end">' +
+                                        '<span><span class="text-muted">Sub. USD</span> <strong class="text-success">$' + formatoUsd.format(subtotalUsd) + '</strong></span>' +
+                                        ' &nbsp;|&nbsp; ' +
+                                        '<span><span class="text-muted">Sub. VES</span> <strong class="text-dark">Bs. ' + formatoVes.format(subtotalVes) + '</strong></span>' +
+                                        ' &nbsp;|&nbsp; ' +
+                                        '<span><span class="text-muted">Sub. BCV</span> <strong class="text-info">$' + formatoUsd.format(subtotalBcv) + '</strong></span>' +
+                                    '</div>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>'
                 );
+
+                $container.append($card);
             });
 
             var totalBcv = calcPrecioBcv(totalVes);
 
+            $('#carrito-footer').removeClass('d-none');
             $('#total-usd').text('$' + formatoUsd.format(totalUsd));
             $('#total-ves').text('Bs. ' + formatoVes.format(totalVes));
             $('#total-bcv').text('$' + formatoUsd.format(totalBcv));
+            $('#carrito-contador').text(carrito.length);
 
             $('#btn-agregar-pago').prop('disabled', false);
             actualizarBotonProcesar();
@@ -778,6 +822,9 @@ $(function () {
             mensajeConfirm += '\n\nATENCION: Esta venta incluye pago a CREDITO.';
         }
 
+        var $btn = $(this);
+        $btn.prop('disabled', true);
+
         Swal.fire({
             icon: 'question',
             title: 'Procesar venta?',
@@ -785,63 +832,69 @@ $(function () {
             showCancelButton: true,
             confirmButtonText: 'Si, procesar',
             cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#198754'
+            confirmButtonColor: '#198754',
+            showLoaderOnConfirm: true,
+            preConfirm: function () {
+                return new Promise(function (resolve) {
+                    var data = {
+                        cedula_cliente: clienteSeleccionado.cedula,
+                        items: JSON.stringify(carrito.map(function (item) {
+                            return {
+                                idproducto: item.idproducto,
+                                cantidad: item.cantidad,
+                                costo_unitario_usd: item.costo_unitario_usd,
+                                precio_unitario_usd: item.precio_unitario_usd,
+                                precio_unitario_ves: item.precio_unitario_ves,
+                                precio_unitario_bcv: item.precio_unitario_bcv || calcPrecioBcv(item.precio_unitario_ves)
+                            };
+                        })),
+                        pagos: JSON.stringify(pagos.map(function (p) {
+                            var monto = parseFloat(p.monto_recibido) || 0;
+                            var bcv = p.moneda === 'USD' ? monto : (tasaBcv > 0 ? parseFloat((monto / tasaBcv).toFixed(2)) : 0);
+                            return {
+                                idtipo_de_pagos: p.idtipo_de_pagos,
+                                moneda: p.moneda,
+                                monto_recibido: monto,
+                                monto_bcv: bcv,
+                                referencia: p.referencia || null
+                            };
+                        })),
+                        total_usd: totalVentaUsd,
+                        total_ves: totalVentaVes,
+                        idTasa: tasaActual ? tasaActual.idTasa : 0
+                    };
+
+                    Ajax.post(window.ROUTES.ventas_guardar, data)
+                        .done(function (res) { resolve(res); })
+                        .fail(function (xhr) {
+                            var msg = 'Error al procesar la venta.';
+                            try {
+                                var r = JSON.parse(xhr.responseText);
+                                if (r.mensaje) msg = r.mensaje;
+                            } catch (e) {}
+                            resolve({ ok: false, mensaje: msg });
+                        });
+                });
+            },
+            allowOutsideClick: function () { return !Swal.isLoading(); }
         }).then(function (result) {
-            if (result.isConfirmed) {
-                var data = {
-                    cedula_cliente: clienteSeleccionado.cedula,
-                    items: JSON.stringify(carrito.map(function (item) {
-                        return {
-                            idproducto: item.idproducto,
-                            cantidad: item.cantidad,
-                            costo_unitario_usd: item.costo_unitario_usd,
-                            precio_unitario_usd: item.precio_unitario_usd,
-                            precio_unitario_ves: item.precio_unitario_ves,
-                            precio_unitario_bcv: item.precio_unitario_bcv || calcPrecioBcv(item.precio_unitario_ves)
-                        };
-                    })),
-                    pagos: JSON.stringify(pagos.map(function (p) {
-                        var monto = parseFloat(p.monto_recibido) || 0;
-                        var bcv = p.moneda === 'USD' ? monto : (tasaBcv > 0 ? parseFloat((monto / tasaBcv).toFixed(2)) : 0);
-                        return {
-                            idtipo_de_pagos: p.idtipo_de_pagos,
-                            moneda: p.moneda,
-                            monto_recibido: monto,
-                            monto_bcv: bcv,
-                            referencia: p.referencia || null
-                        };
-                    })),
-                    total_usd: totalVentaUsd,
-                    total_ves: totalVentaVes,
-                    idTasa: tasaActual ? tasaActual.idTasa : 0
-                };
-
-                $('#btn-procesar-venta').prop('disabled', true);
-
-                Ajax.post(window.ROUTES.ventas_guardar, data)
-                    .done(function (res) {
-                        if (res.ok) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Venta procesada',
-                                text: res.mensaje,
-                                timer: 2500,
-                                showConfirmButton: false
-                            });
-                            reiniciarVenta();
-                        } else {
-                            Swal.fire({ icon: 'error', title: 'Error', text: res.mensaje });
-                            actualizarBotonProcesar();
-                        }
-                    }).fail(function (xhr) {
-                        var msg = 'Error al procesar la venta.';
-                        try {
-                            var r = JSON.parse(xhr.responseText);
-                            if (r.mensaje) msg = r.mensaje;
-                        } catch (e) {}
-                        Swal.fire({ icon: 'error', title: 'Error', text: msg });
-                        actualizarBotonProcesar();
+            if (result.isConfirmed && result.value) {
+                var res = result.value;
+                if (res.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Venta procesada',
+                        text: res.mensaje,
+                        timer: 2500,
+                        showConfirmButton: false
                     });
+                    reiniciarVenta();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: res.mensaje });
+                    actualizarBotonProcesar();
+                }
+            } else {
+                actualizarBotonProcesar();
             }
         });
     });
@@ -852,6 +905,7 @@ $(function () {
         clienteSeleccionado = null;
         esCredito = false;
         monedaGlobal = 'USD';
+        imagenProductoActual = '';
         $('#moneda-usd').prop('checked', true);
         renderCarrito();
         renderPagos();

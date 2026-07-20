@@ -32,7 +32,7 @@ $tiposPago = $tiposPago ?? [];
 
     <div class="row mb-4">
         <div class="col-lg-6">
-            <div class="card shadow h-100">
+            <div class="card shadow">
                 <div class="card-header bg-white">
                     <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Cliente</h5>
                 </div>
@@ -46,32 +46,41 @@ $tiposPago = $tiposPago ?? [];
                         </button>
                     </div>
                     <div id="info-cliente" class="d-none mt-3">
-                        <div class="alert alert-info border-0 shadow-sm">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <small class="text-muted d-block">Nombre</small>
-                                    <strong id="info-cliente-nombre">-</strong>
+                        <div class="alert alert-light border shadow-sm">
+                            <div class="text-center mb-3">
+                                <div class="display-6 text-primary mb-1">
+                                    <i class="bi bi-person-circle"></i>
                                 </div>
-                                <div class="col-md-3">
-                                    <small class="text-muted d-block">Cédula</small>
-                                    <strong id="info-cliente-cedula">-</strong>
+                                <h5 class="fw-bold text-dark mb-0" id="info-cliente-nombre">-</h5>
+                                <small class="text-muted">C.I. <span id="info-cliente-cedula">-</span></small>
+                            </div>
+
+                            <hr class="my-2">
+
+                            <div class="row g-2 mb-2">
+                                <div class="col-4" id="info-cliente-telefono-wrap">
+                                    <div class="border rounded-3 p-2 text-center bg-white">
+                                        <small class="text-muted d-block"><i class="bi bi-telephone me-1"></i>Teléfono</small>
+                                        <strong class="text-dark" id="info-cliente-telefono">-</strong>
+                                    </div>
                                 </div>
-                                <div class="col-md-3" id="info-cliente-telefono-wrap">
-                                    <small class="text-muted d-block">Teléfono</small>
-                                    <strong id="info-cliente-telefono">-</strong>
+                                <div class="col-4" id="info-cliente-email-wrap">
+                                    <div class="border rounded-3 p-2 text-center bg-white">
+                                        <small class="text-muted d-block"><i class="bi bi-envelope me-1"></i>Email</small>
+                                        <strong class="text-dark" id="info-cliente-email">-</strong>
+                                    </div>
                                 </div>
-                                <div class="col-md-6" id="info-cliente-email-wrap">
-                                    <small class="text-muted d-block">Email</small>
-                                    <strong id="info-cliente-email">-</strong>
-                                </div>
-                                <div class="col-md-6" id="info-cliente-direccion-wrap">
-                                    <small class="text-muted d-block">Dirección</small>
-                                    <strong id="info-cliente-direccion">-</strong>
+                                <div class="col-4" id="info-cliente-direccion-wrap">
+                                    <div class="border rounded-3 p-2 text-center bg-white">
+                                        <small class="text-muted d-block"><i class="bi bi-geo-alt me-1"></i>Dirección</small>
+                                        <strong class="text-dark" id="info-cliente-direccion">-</strong>
+                                    </div>
                                 </div>
                             </div>
-                            <div id="info-cliente-credito" class="mt-2 d-none">
-                                <span class="badge bg-warning text-dark me-1">USD: $<span id="info-cliente-saldo-usd">0.00</span></span>
-                                <span class="badge bg-secondary">BCV: $<span id="info-cliente-saldo-bcv">0.00</span></span>
+
+                            <div id="info-cliente-credito" class="text-center d-none">
+                                <span class="badge bg-warning text-dark fs-6">Deuda USD: $<span id="info-cliente-saldo-usd">0.00</span></span>
+                                <span class="badge bg-secondary fs-6">Deuda BCV: $<span id="info-cliente-saldo-bcv">0.00</span></span>
                             </div>
                         </div>
                     </div>
@@ -80,7 +89,7 @@ $tiposPago = $tiposPago ?? [];
         </div>
 
         <div class="col-lg-6">
-            <div class="card shadow h-100">
+            <div class="card shadow">
                 <div class="card-header bg-white">
                     <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Producto</h5>
                 </div>
@@ -135,7 +144,7 @@ $tiposPago = $tiposPago ?? [];
                                 <div class="col-4">
                                     <div class="rounded-3 p-3 text-center bg-warning bg-opacity-10 border border-warning border-opacity-25">
                                         <small class="text-warning fw-semibold d-block">PRECIO VES</small>
-                                        <strong class="text-warning fs-5" id="info-producto-precio-ves">-</strong>
+                                        <strong class="text-dark fs-5" id="info-producto-precio-ves">-Bs.</strong>
                                     </div>
                                 </div>
                                 <div class="col-4">
@@ -192,41 +201,29 @@ $tiposPago = $tiposPago ?? [];
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow">
-                <div class="card-header bg-white">
+                <div class="card-header bg-white d-flex align-items-center justify-content-between">
                     <h5 class="mb-0"><i class="bi bi-cart3 me-2"></i>Carrito de Compra</h5>
+                    <span class="badge bg-secondary" id="carrito-contador">0</span>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover align-middle mb-0" id="tabla-carrito">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Producto</th>
-                                    <th class="text-center" style="width:80px">Cant</th>
-                                    <th class="text-end">P.U. USD</th>
-                                    <th class="text-end">P.U. VES</th>
-                                    <th class="text-end">P.U. $BCV</th>
-                                    <th class="text-end">Sub. USD</th>
-                                    <th class="text-end">Sub. VES</th>
-                                    <th class="text-end">Sub. $BCV</th>
-                                    <th style="width:40px"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="text-muted text-center">
-                                    <td colspan="10">Sin productos en el carrito</td>
-                                </tr>
-                            </tbody>
-                            <tfoot class="table-light fw-bold">
-                                <tr>
-                                    <td colspan="6" class="text-end">Totales:</td>
-                                    <td class="text-end" id="total-usd">$0.00</td>
-                                    <td class="text-end" id="total-ves">Bs. 0.00</td>
-                                    <td class="text-end" id="total-bcv">$0.00</td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                <div class="card-body">
+                    <div id="carrito-container">
+                        <p class="text-muted text-center mb-0 py-3" id="carrito-vacio">Sin productos en el carrito</p>
+                    </div>
+                </div>
+                <div class="card-footer bg-light d-none" id="carrito-footer">
+                    <div class="row text-center fw-bold">
+                        <div class="col-4">
+                            <small class="text-muted d-block">TOTAL USD</small>
+                            <span class="text-success fs-5" id="total-usd">$0.00</span>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted d-block">TOTAL VES</small>
+                            <span class="text-dark fs-5" id="total-ves">Bs. 0.00</span>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted d-block">TOTAL $BCV</small>
+                            <span class="text-info fs-5" id="total-bcv">$0.00</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -276,7 +273,7 @@ $tiposPago = $tiposPago ?? [];
             </div>
         </div>
     </div>
-
+    <br>
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-end gap-2">
