@@ -1,12 +1,13 @@
 /**
  * stock.js - Módulo de Stock e Inventario
- * Select2 + filtros + DataTable con precios resaltados
+ * Select2 + DataTable server-side + filtros sin destrucción
  */
 
 $(function () {
 
-    let tablaStock = null;
-    let filtroActual = 'todos';
+    var tablaStock = null;
+    var filtroActual = 'todos';
+    var fmtVes = new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     /* ===== Select2 ===== */
 
@@ -19,7 +20,7 @@ $(function () {
                 url: window.BASE_URL + window.ROUTES.stock_productos_buscar,
                 type: 'POST',
                 dataType: 'json',
-                delay: 300,
+                delay: 200,
                 data: function (params) {
                     return { q: params.term };
                 },
@@ -34,166 +35,168 @@ $(function () {
     /* ===== Eventos Select2 ===== */
 
     $('#select-producto').on('select2:select', function (e) {
-        const producto = e.params.data;
-        const idProducto = producto.id;
+        var p = e.params.data;
+        if (!p || !p.id) return;
 
-        // Hacer AJAX para obtener detalles completos del producto
-        Ajax.post(window.ROUTES.stock_producto_info, { id: idProducto })
-            .done(function (res) {
-                if (res.ok && res.data) {
-                    const p = res.data;
-                    const stock = parseFloat(p.stock) || 0;
-                    const stockMin = parseFloat(p.stock_minimo) || 0;
-                    const precioVentaUsd = parseFloat(p.precio_venta_usd) || 0;
-                    const precioVentaVes = parseFloat(p.precio_venta_ves) || 0;
-                    const precioBcv = parseFloat(p.precio_bcv) || 0;
+        var stock = parseFloat(p.stock) || 0;
+        var stockMin = parseFloat(p.stock_minimo) || 0;
+        var precioVentaUsd = parseFloat(p.precio_venta_usd) || 0;
+        var precioVentaVes = parseFloat(p.precio_venta_ves) || 0;
+        var precioBcv = parseFloat(p.precio_bcv) || 0;
 
-                    // Imagen
-                    if (p.imgproducto) {
-                        $('#detalle-imagen img').attr('src', `${window.BASE_URL}/${p.imgproducto}`);
-                        $('#detalle-imagen-icon').addClass('d-none');
-                        $('#detalle-imagen img').removeClass('d-none');
-                    } else {
-                        $('#detalle-imagen img').addClass('d-none').attr('src', '');
-                        $('#detalle-imagen-icon').removeClass('d-none');
-                    }
+        if (p.imgproducto) {
+            $('#detalle-imagen img').attr('src', window.BASE_URL + '/' + p.imgproducto);
+            $('#detalle-imagen-icon').addClass('d-none');
+            $('#detalle-imagen img').removeClass('d-none');
+        } else {
+            $('#detalle-imagen img').addClass('d-none').attr('src', '');
+            $('#detalle-imagen-icon').removeClass('d-none');
+        }
 
-                    // Información del producto
-                    $('#detalle-nombre').text(p.nombre);
-                    $('#detalle-codigo').text(p.codigo || 'N/A');
-                    $('#detalle-tipo').text(p.tipo_producto || 'N/A');
-                    $('#detalle-marca').text(p.marca || 'Sin marca');
+        $('#detalle-nombre').text(p.nombre);
+        $('#detalle-codigo').text(p.codigo || 'N/A');
+        $('#detalle-tipo').text(p.tipo_producto || 'N/A');
+        $('#detalle-marca').text(p.marca || 'Sin marca');
 
-                    // Stock con color
-                    let stockHtml = '';
-                    if (stock === 0) {
-                        stockHtml = `<span class="badge bg-danger fs-5">${Math.round(stock)}</span>`;
-                    } else if (stock <= stockMin) {
-                        stockHtml = `<span class="badge bg-warning text-dark fs-5">${Math.round(stock)}</span>`;
-                    } else {
-                        stockHtml = `<span class="badge bg-success fs-5">${Math.round(stock)}</span>`;
-                    }
-                    $('#detalle-stock').html(stockHtml);
+        var stockHtml = '';
+        if (stock === 0) {
+            stockHtml = '<span class="badge bg-danger fs-5">' + Math.round(stock) + '</span>';
+        } else if (stock <= stockMin) {
+            stockHtml = '<span class="badge bg-warning text-dark fs-5">' + Math.round(stock) + '</span>';
+        } else {
+            stockHtml = '<span class="badge bg-success fs-5">' + Math.round(stock) + '</span>';
+        }
+        $('#detalle-stock').html(stockHtml);
 
-                    // Precios
-                    const precioVesFormateado = new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(precioVentaVes);
-                    $('#detalle-precio-bs').text(`Bs. ${precioVesFormateado}`);
-                    $('#detalle-precio-bcv').text(`$${precioBcv.toFixed(2)}`);
-                    $('#detalle-precio-usd').text(`$${precioVentaUsd.toFixed(2)}`);
+        $('#detalle-precio-bs').text('Bs. ' + fmtVes.format(precioVentaVes));
+        $('#detalle-precio-bcv').text('$' + precioBcv.toFixed(2));
+        $('#detalle-precio-usd').text('$' + precioVentaUsd.toFixed(2));
 
-                    // Mostrar la card con animación
-                    $('#detalle-producto-container').slideDown(300);
-                }
-            })
-            .fail(function () {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'No se pudo obtener la información del producto.',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            });
+        $('#detalle-producto-container').slideDown(300);
     });
 
     $('#select-producto').on('select2:clear', function () {
-        // Ocultar la card de detalle
         $('#detalle-producto-container').slideUp(300);
     });
+
+    /* ===== DataTable server-side ===== */
+
+    function initDataTable() {
+        tablaStock = $('#tabla-stock').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: window.BASE_URL + window.ROUTES.stock_listar,
+                type: 'POST',
+                data: function (d) {
+                    d.filtro = filtroActual;
+                }
+            },
+            columns: [
+                {
+                    data: 'imgproducto',
+                    render: function (data) {
+                        if (data) {
+                            return '<img src="' + window.BASE_URL + '/' + data + '" class="rounded" style="width:50px;height:50px;object-fit:contain;">';
+                        }
+                        return '<span class="badge bg-secondary">Sin imagen</span>';
+                    },
+                    orderable: false,
+                    searchable: false
+                },
+                { data: 'codigo' },
+                {
+                    data: 'nombre',
+                    render: function (data, type, row) {
+                        if (type === 'display' || type === 'filter') {
+                            return '<div><strong>' + data + '</strong><br><small class="text-muted">' + (row.marca || '') + '</small></div>';
+                        }
+                        return data;
+                    }
+                },
+                {
+                    data: 'tipo_producto',
+                    render: function (data, type) {
+                        if (type === 'display' || type === 'filter') {
+                            return '<span class="badge bg-info">' + (data || 'N/A') + '</span>';
+                        }
+                        return data;
+                    }
+                },
+                {
+                    data: 'stock',
+                    render: function (data, type, row) {
+                        var s = parseFloat(data) || 0;
+                        if (type === 'display' || type === 'filter') {
+                            var min = parseFloat(row.stock_minimo) || 0;
+                            var cls = 'bg-success';
+                            if (s === 0) cls = 'bg-danger';
+                            else if (s <= min) cls = 'bg-warning text-dark';
+                            return '<span class="badge ' + cls + ' fs-6">' + Math.round(s) + '</span>';
+                        }
+                        return s;
+                    },
+                    className: 'text-center'
+                },
+                {
+                    data: 'precio_venta_ves',
+                    render: function (data, type) {
+                        var val = parseFloat(data) || 0;
+                        if (type === 'display' || type === 'filter') {
+                            return '<span class="badge bg-primary fs-6">Bs. ' + fmtVes.format(val) + '</span>';
+                        }
+                        return val;
+                    },
+                    className: 'text-center'
+                },
+                {
+                    data: 'precio_bcv',
+                    render: function (data, type) {
+                        var val = parseFloat(data) || 0;
+                        if (type === 'display' || type === 'filter') {
+                            return '<span class="badge bg-info text-dark fs-6">$' + val.toFixed(2) + '</span>';
+                        }
+                        return val;
+                    },
+                    className: 'text-center'
+                },
+                {
+                    data: 'precio_venta_usd',
+                    render: function (data, type) {
+                        var val = parseFloat(data) || 0;
+                        if (type === 'display' || type === 'filter') {
+                            return '<span class="badge bg-success fs-6">$' + val.toFixed(2) + '</span>';
+                        }
+                        return val;
+                    },
+                    className: 'text-center'
+                }
+            ],
+            language: {
+                url: window.BASE_URL + '/assets/lib/datatables/js/es-ES.json'
+            },
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'Todos']],
+            order: [[2, 'asc']],
+            dom: '<"row mb-3"<"col-md-6"l><"col-md-6"f>>rtip'
+        });
+
+        $('#tabla-stock').on('xhr.dt', function (e, settings, json) {
+            $('#total-productos').text(json.recordsFiltered + ' producto(s)');
+        });
+    }
 
     /* ===== Filtros ===== */
 
     $('[data-filtro]').on('click', function () {
-        const filtro = $(this).data('filtro');
-        filtroActual = filtro;
+        filtroActual = $(this).data('filtro');
         $('[data-filtro]').removeClass('active');
         $(this).addClass('active');
-        cargarStock(filtro);
+        tablaStock.ajax.reload(null, false);
     });
-
-    /* ===== Cargar Stock ===== */
-
-    function cargarStock(filtro = 'todos') {
-        Ajax.post(window.ROUTES.stock_listar, { filtro: filtro })
-            .done(function (res) {
-                const data = res.data || [];
-                $('#total-productos').text(data.length + ' producto(s)');
-
-                const rows = data.map(function (p) {
-                    const stock = parseFloat(p.stock) || 0;
-                    const stockMin = parseFloat(p.stock_minimo) || 0;
-                    const precioVentaUsd = parseFloat(p.precio_venta_usd) || 0;
-                    const precioVentaVes = parseFloat(p.precio_venta_ves) || 0;
-
-                    // Imagen
-                    let imgHtml = '';
-                    if (p.imgproducto) {
-                        imgHtml = `<img src="${window.BASE_URL}/${p.imgproducto}" class="rounded" style="width:50px;height:50px;object-fit:contain;">`;
-                    } else {
-                        imgHtml = `<span class="badge bg-secondary">Sin imagen</span>`;
-                    }
-
-                    // Stock con color
-                    let stockHtml = '';
-                    if (stock === 0) {
-                        stockHtml = `<span class="badge bg-danger fs-6">${Math.round(stock)}</span>`;
-                    } else if (stock <= stockMin) {
-                        stockHtml = `<span class="badge bg-warning text-dark fs-6">${Math.round(stock)}</span>`;
-                    } else {
-                        stockHtml = `<span class="badge bg-success fs-6">${Math.round(stock)}</span>`;
-                    }
-
-                    // Precios resaltados
-                    const precioVesFormateado = new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(precioVentaVes);
-                    const precioBsHtml = `<span class="badge bg-primary fs-6">Bs. ${precioVesFormateado}</span>`;
-                    const precioBcvHtml = `<span class="badge bg-info text-dark fs-6">$${(p.precio_bcv || 0).toFixed(2)}</span>`;
-                    const precioUsdHtml = `<span class="badge bg-success fs-6">$${precioVentaUsd.toFixed(2)}</span>`;
-
-                    return [
-                        imgHtml,
-                        p.codigo || 'N/A',
-                        `<div><strong>${p.nombre}</strong><br><small class="text-muted">${p.marca || ''}</small></div>`,
-                        `<span class="badge bg-info">${p.tipo_producto || 'N/A'}</span>`,
-                        stockHtml,
-                        precioBsHtml,
-                        precioBcvHtml,
-                        precioUsdHtml
-                    ];
-                });
-
-                if (tablaStock) {
-                    tablaStock.clear().destroy();
-                }
-
-                tablaStock = $('#tabla-stock').DataTable({
-                    data: rows,
-                    columns: [
-                        { title: 'Imagen', orderable: false, searchable: false },
-                        { title: 'Código' },
-                        { title: 'Producto' },
-                        { title: 'Tipo' },
-                        { title: 'Stock Actual', className: 'text-center' },
-                        { title: 'Precio Bs', className: 'text-center' },
-                        { title: 'Precio $Bcv', className: 'text-center' },
-                        { title: 'Precio $ venta usd', className: 'text-center' }
-                    ],
-                    responsive: true,
-                    language: {
-                        url: window.BASE_URL + '/assets/lib/datatables/js/es-ES.json'
-                    },
-                    pageLength: 10,
-                    lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'Todos']],
-                    order: [[2, 'asc']],
-                    dom: '<"row mb-3"<"col-md-6"l><"col-md-6"f>>rtip'
-                });
-            }).fail(function () {
-                if (tablaStock) tablaStock.clear().destroy();
-                $('#tabla-stock tbody').html('<tr><td colspan="8" class="text-center text-muted py-4">Error al cargar el stock</td></tr>');
-            });
-    }
 
     /* ===== Inicialización ===== */
 
     initSelect2();
-    cargarStock('todos');
+    initDataTable();
 });

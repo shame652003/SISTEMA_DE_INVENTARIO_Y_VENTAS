@@ -8,8 +8,12 @@ class Stock extends Model
 {
     protected string $table = 'producto';
 
-    public function obtenerTodos(string $filtro = 'todos'): array
+    public function obtenerTodosPaginado(int $start, int $length, string $search, string $filtro, string $orderBy, string $orderDir): array
     {
+        $orderDir = strtoupper($orderDir) === 'DESC' ? 'DESC' : 'ASC';
+        $allowed = ['codigo', 'nombre', 'tipo_producto', 'stock', 'precio_venta_ves', 'precio_venta_usd'];
+        $orderBy = in_array($orderBy, $allowed) ? $orderBy : 'nombre';
+
         $sql = "SELECT p.idproducto, p.codigo, p.nombre, p.marca, p.imgproducto,
                        tp.tipo AS tipo_producto, p.stock, p.stock_minimo,
                        p.precio_costo_usd, p.precio_venta_usd, p.precio_venta_ves
@@ -17,6 +21,32 @@ class Stock extends Model
                 INNER JOIN tipo_productos tp ON tp.idTipoA = p.idTipoA
                 WHERE p.status = 1";
 
+        $params = [];
+        $this->agregarFiltroSql($sql, $params, $filtro, $search);
+
+        $sql .= " ORDER BY p.{$orderBy} {$orderDir}";
+        if ($length > 0) {
+            $sql .= " LIMIT {$start}, {$length}";
+        }
+
+        return $this->fetchAll($sql, $params);
+    }
+
+    public function contarProductos(string $search, string $filtro): int
+    {
+        $sql = "SELECT COUNT(*) AS total
+                FROM {$this->table} p
+                WHERE p.status = 1";
+
+        $params = [];
+        $this->agregarFiltroSql($sql, $params, $filtro, $search);
+
+        $row = $this->fetch($sql, $params);
+        return (int) ($row['total'] ?? 0);
+    }
+
+    private function agregarFiltroSql(string &$sql, array &$params, string $filtro, string $search): void
+    {
         if ($filtro === 'bajo') {
             $sql .= " AND p.stock > 0 AND p.stock <= p.stock_minimo";
         } elseif ($filtro === 'agotado') {
@@ -25,27 +55,36 @@ class Stock extends Model
             $sql .= " AND p.stock > 0";
         }
 
-        $sql .= " ORDER BY p.nombre";
-
-        return $this->fetchAll($sql);
+        if ($search !== '') {
+            $sql .= " AND (p.codigo LIKE ? OR p.nombre LIKE ? OR p.marca LIKE ?)";
+            $s = '%' . $search . '%';
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
+        }
     }
 
     public function buscarProductos(string $q): array
     {
-        $q = '%' . $q . '%';
+        $q = trim($q);
+        $words = array_filter(explode(' ', $q));
+        $ftQ = '+' . implode('* +', $words) . '*';
+
         return $this->fetchAll(
             "SELECT p.idproducto AS id,
                     CONCAT(p.codigo, ' - ', p.nombre,
                            IF(p.marca IS NOT NULL AND p.marca != '', CONCAT(' [', p.marca, ']'), '')) AS text,
-                    p.codigo, p.nombre, p.marca, p.imgproducto, p.stock,
+                    p.codigo, p.nombre, p.marca, p.imgproducto,
+                    p.stock, p.stock_minimo,
+                    p.precio_venta_usd, p.precio_venta_ves, p.precio_costo_usd,
                     tp.tipo AS tipo_producto
              FROM {$this->table} p
              INNER JOIN tipo_productos tp ON tp.idTipoA = p.idTipoA
              WHERE p.status = 1
-               AND (p.codigo LIKE ? OR p.nombre LIKE ?)
+               AND MATCH(p.codigo, p.nombre, p.marca) AGAINST(? IN BOOLEAN MODE)
              ORDER BY p.nombre
              LIMIT 20",
-            [$q, $q]
+            [$ftQ]
         );
     }
 

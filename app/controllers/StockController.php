@@ -20,23 +20,41 @@ class StockController extends Controller
     {
         if (!$this->verificarPermiso('stock')) return;
 
-        $filtro = $_POST['filtro'] ?? 'todos';
+        $draw    = (int) ($_POST['draw'] ?? 1);
+        $start   = max(0, (int) ($_POST['start'] ?? 0));
+        $length  = (int) ($_POST['length'] ?? 10);
+        if ($length < 1 && $length !== -1) {
+            $length = 10;
+        }
+        $search  = $_POST['search']['value'] ?? '';
+        $filtro  = $_POST['filtro'] ?? 'todos';
+
+        $colMap  = ['', 'codigo', 'nombre', 'tipo_producto', 'stock', 'precio_venta_ves', 'precio_venta_ves', 'precio_venta_usd'];
+        $colIdx  = (int) ($_POST['order'][0]['column'] ?? 2);
+        $orderBy = $colMap[$colIdx] ?? 'nombre';
+        $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'ASC');
+
         $stock = new Stock();
-        $data = $stock->obtenerTodos($filtro);
-        
-        // Obtener tasa BCV actual
+        $data  = $stock->obtenerTodosPaginado($start, $length, $search, $filtro, $orderBy, $orderDir);
+        $totalFiltrado = $stock->contarProductos($search, $filtro);
+        $totalSinFiltro = $stock->contarProductos('', 'todos');
+
         $tasa = $stock->obtenerTasaActual();
         $tasaBcv = $tasa ? (float) $tasa['tasa_ves_por_usd'] : 0;
-        
-        // Calcular precio_bcv para cada producto
+
         if ($data) {
-            foreach ($data as &$producto) {
-                $precioVentaVes = (float) ($producto['precio_venta_ves'] ?? 0);
-                $producto['precio_bcv'] = $tasaBcv > 0 ? round($precioVentaVes / $tasaBcv, 2) : 0;
+            foreach ($data as &$p) {
+                $precioVes = (float) ($p['precio_venta_ves'] ?? 0);
+                $p['precio_bcv'] = $tasaBcv > 0 ? round($precioVes / $tasaBcv, 2) : 0;
             }
         }
 
-        $this->json(['data' => $data ?: [], 'tasa_bcv' => $tasaBcv]);
+        $this->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $totalSinFiltro,
+            'recordsFiltered' => $totalFiltrado,
+            'data'            => $data ?: [],
+        ]);
     }
 
     public function buscarProductos(): void
@@ -50,6 +68,17 @@ class StockController extends Controller
 
         $stock = new Stock();
         $productos = $stock->buscarProductos($q);
+
+        $tasa = $stock->obtenerTasaActual();
+        $tasaBcv = $tasa ? (float) $tasa['tasa_ves_por_usd'] : 0;
+
+        if ($productos) {
+            foreach ($productos as &$producto) {
+                $precioVentaVes = (float) ($producto['precio_venta_ves'] ?? 0);
+                $producto['precio_bcv'] = $tasaBcv > 0 ? round($precioVentaVes / $tasaBcv, 2) : 0;
+            }
+        }
+
         $this->json(['results' => $productos ?: []]);
     }
 
