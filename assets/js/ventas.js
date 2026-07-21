@@ -57,33 +57,53 @@ $(function () {
         return 0;
     }
 
+    function recalcularPagosDesdeTotal() {
+        if (pagos.length === 0 || carrito.length === 0) return;
+        var totalSegunMoneda = monedaGlobal === 'USD' ? getTotalUsdCarrito() : getTotalVesCarrito();
+        if (totalSegunMoneda <= 0) return;
+
+        if (pagos.length === 1) {
+            pagos[0].monto_recibido = totalSegunMoneda;
+            if (monedaGlobal === 'VES') {
+                pagos[0].monto_equivalente = calcPrecioBcv(totalSegunMoneda);
+            }
+        } else {
+            var montoBase = Math.round((totalSegunMoneda / pagos.length) * 100) / 100;
+            var montoPrimeros = Math.round((totalSegunMoneda - montoBase * (pagos.length - 1)) * 100) / 100;
+            for (var i = 0; i < pagos.length; i++) {
+                var monto = (i === 0) ? montoPrimeros : montoBase;
+                pagos[i].monto_recibido = monto;
+                if (monedaGlobal === 'VES') {
+                    pagos[i].monto_equivalente = calcPrecioBcv(monto);
+                }
+            }
+        }
+        renderPagos();
+    }
+
     function redistribuirPagos(indexEditado) {
         if (pagos.length < 2) return;
+        if (indexEditado === pagos.length - 1) return;
+
         var totalSegunMoneda = monedaGlobal === 'USD' ? getTotalUsdCarrito() : getTotalVesCarrito();
-        var montoEditado = parseFloat(pagos[indexEditado].monto_recibido) || 0;
-        var restante = totalSegunMoneda - montoEditado;
-        if (restante < 0) restante = 0;
-
-        var otrosCount = pagos.length - 1;
-        if (otrosCount <= 0) return;
-        var montoPorOtro = Math.floor((restante / otrosCount) * 100) / 100;
-        var montoPrimerOtro = Math.round((restante - montoPorOtro * (otrosCount - 1)) * 100) / 100;
-
-        var idxOtro = 0;
+        var sumaOtros = 0;
         for (var i = 0; i < pagos.length; i++) {
-            if (i === indexEditado) continue;
-            var monto = (idxOtro === 0) ? montoPrimerOtro : montoPorOtro;
-            pagos[i].monto_recibido = monto;
-            if (monedaGlobal === 'VES') {
-                pagos[i].monto_equivalente = calcPrecioBcv(monto);
-            }
+            if (i === pagos.length - 1) continue;
+            sumaOtros += parseFloat(pagos[i].monto_recibido) || 0;
+        }
+        var restante = totalSegunMoneda - sumaOtros;
+        if (restante < 0) restante = 0;
+        restante = Math.round(restante * 100) / 100;
 
-            $('.input-monto-pago[data-index="' + i + '"]').val(monto.toFixed(2));
-            if (monedaGlobal === 'VES') {
-                var eq = pagos[i].monto_equivalente;
-                $('.input-monto-equivalente-pago[data-index="' + i + '"]').val(eq ? eq.toFixed(2) : '');
-            }
-            idxOtro++;
+        pagos[pagos.length - 1].monto_recibido = restante;
+        if (monedaGlobal === 'VES') {
+            pagos[pagos.length - 1].monto_equivalente = calcPrecioBcv(restante);
+        }
+
+        $('.input-monto-pago[data-index="' + (pagos.length - 1) + '"]').val(restante.toFixed(2));
+        if (monedaGlobal === 'VES') {
+            var eq = pagos[pagos.length - 1].monto_equivalente;
+            $('.input-monto-equivalente-pago[data-index="' + (pagos.length - 1) + '"]').val(eq ? eq.toFixed(2) : '');
         }
 
         for (var j = 0; j < pagos.length; j++) {
@@ -554,6 +574,9 @@ $(function () {
             actualizarBotonProcesar();
         }
 
+        if (pagos.length > 0 && carrito.length > 0) {
+            recalcularPagosDesdeTotal();
+        }
         actualizarResumenPagos();
     }
 
@@ -621,7 +644,11 @@ $(function () {
     $(document).on('click', '.btn-eliminar-pago', function () {
         var index = $(this).data('index');
         pagos.splice(index, 1);
-        renderPagos();
+        if (pagos.length > 0 && carrito.length > 0) {
+            recalcularPagosDesdeTotal();
+        } else {
+            renderPagos();
+        }
     });
 
     $(document).on('change', '.radio-tipo-pago', function () {
@@ -783,8 +810,8 @@ $(function () {
             var readonlyAttr = esUnSoloPago ? ' readonly' : '';
             var readonlyClass = esUnSoloPago ? ' bg-light' : '';
 
-            var mostrarAutoBadge = pagos.length > 1;
-            var autoBadge = mostrarAutoBadge ? ' <span class="badge bg-info ms-1 auto-badge">Auto</span>' : '';
+            var esUltimo = pagos.length > 1 && index === pagos.length - 1;
+            var autoBadge = esUltimo ? ' <span class="badge bg-info ms-1 auto-badge">Auto</span>' : '';
 
             var tieneRef = pago.referencia && pago.referencia.length > 0;
             var refChecked = tieneRef ? ' checked' : '';
