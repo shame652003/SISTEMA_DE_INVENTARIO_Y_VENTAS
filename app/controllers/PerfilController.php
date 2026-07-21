@@ -47,15 +47,25 @@ class PerfilController extends Controller
         }
 
         $cedula = (int) $usuario['cedula'];
-        $nombre = $_POST['nombre'] ?? '';
-        $segNombre = $_POST['segNombre'] ?? '';
-        $apellido = $_POST['apellido'] ?? '';
-        $segApellido = $_POST['segApellido'] ?? '';
-        $correo = $_POST['correo'] ?? '';
-        $telefono = $_POST['telefono'] ?? '';
+        $nombre = mb_convert_case(trim($_POST['nombre'] ?? ''), MB_CASE_TITLE, 'UTF-8');
+        $segNombre = mb_convert_case(trim($_POST['segNombre'] ?? ''), MB_CASE_TITLE, 'UTF-8');
+        $apellido = mb_convert_case(trim($_POST['apellido'] ?? ''), MB_CASE_TITLE, 'UTF-8');
+        $segApellido = mb_convert_case(trim($_POST['segApellido'] ?? ''), MB_CASE_TITLE, 'UTF-8');
+        $correo = strtolower(trim($_POST['correo'] ?? ''));
+        $telefono = trim($_POST['telefono'] ?? '');
 
         if (empty($nombre) || empty($apellido) || empty($correo) || empty($telefono)) {
             $this->json(['ok' => false, 'mensaje' => 'Todos los campos obligatorios deben estar completos.'], 400);
+            return;
+        }
+
+        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            $this->json(['ok' => false, 'mensaje' => 'Correo electrónico inválido.'], 400);
+            return;
+        }
+
+        if (!preg_match('/^[\d\-\(\)\+\s]{7,20}$/', $telefono)) {
+            $this->json(['ok' => false, 'mensaje' => 'Teléfono inválido. Use solo dígitos, guiones, paréntesis o +.'], 400);
             return;
         }
 
@@ -71,11 +81,26 @@ class PerfilController extends Controller
 
         // Imagen
         if (!empty($_FILES['imagen']['tmp_name'])) {
+            $allowedExt = ['jpg', 'jpeg', 'png', 'webp'];
+            $allowedMime = ['image/jpeg', 'image/png', 'image/webp'];
+            $ext = strtolower(pathinfo($_FILES['imagen']['name'], PATHINFO_EXTENSION));
+            $mime = $_FILES['imagen']['type'];
+            $size = $_FILES['imagen']['size'];
+
+            if (!in_array($ext, $allowedExt) || !in_array($mime, $allowedMime)) {
+                $this->json(['ok' => false, 'mensaje' => 'La imagen debe ser JPG, PNG o WEBP.'], 400);
+                return;
+            }
+
+            if ($size > 5 * 1024 * 1024) {
+                $this->json(['ok' => false, 'mensaje' => 'La imagen no puede superar los 5 MB.'], 400);
+                return;
+            }
+
             $uploadDir = dirname(__DIR__, 2) . '/public/uploads/usuarios/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
             }
-            $ext = pathinfo($_FILES['imagen']['name'], PATHINFO_EXTENSION);
             $filename = 'perfil_' . $cedula . '_' . time() . '.' . $ext;
             $filepath = $uploadDir . $filename;
             if (move_uploaded_file($_FILES['imagen']['tmp_name'], $filepath)) {
@@ -144,6 +169,11 @@ class PerfilController extends Controller
 
         if (!$u || !password_verify($claveActual, $u['clave'])) {
             $this->json(['ok' => false, 'mensaje' => 'La contraseña actual es incorrecta.'], 400);
+            return;
+        }
+
+        if ($claveNueva === $claveActual) {
+            $this->json(['ok' => false, 'mensaje' => 'La nueva contraseña debe ser diferente a la actual.'], 400);
             return;
         }
 

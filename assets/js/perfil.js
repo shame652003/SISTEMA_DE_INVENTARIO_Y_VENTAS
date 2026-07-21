@@ -5,6 +5,8 @@
 $(function () {
 
     const modalClave = new bootstrap.Modal(document.getElementById('modal-cambiar-clave'));
+    var guardandoPerfil = false;
+    var cambiandoClave = false;
 
     // ═══════════════════════════════════════════════════════
     // VALIDACIONES EN TIEMPO REAL
@@ -213,6 +215,7 @@ $(function () {
 
     $('#form-perfil').on('submit', function (e) {
         e.preventDefault();
+        if (guardandoPerfil) return;
         Validaciones.limpiarErrores('#form-perfil');
 
         // Validar campos obligatorios
@@ -227,6 +230,10 @@ $(function () {
 
         // Validar teléfono
         if (!Validaciones.telefono('#perfil-telefono')) return;
+
+        guardandoPerfil = true;
+        var $btn = $(this).find('button[type="submit"]');
+        $btn.prop('disabled', true);
 
         var formData = new FormData(this);
 
@@ -245,6 +252,10 @@ $(function () {
                 var msg = 'Error al actualizar perfil.';
                 try { var r = JSON.parse(xhr.responseText); if (r.mensaje) msg = r.mensaje; } catch (e) {}
                 Swal.fire({ icon: 'error', title: 'Error', text: msg });
+            })
+            .always(function () {
+                guardandoPerfil = false;
+                $btn.prop('disabled', false);
             });
     });
 
@@ -254,6 +265,7 @@ $(function () {
 
     $('#form-cambiar-clave').on('submit', function (e) {
         e.preventDefault();
+        if (cambiandoClave) return;
         Validaciones.limpiarErrores('#form-cambiar-clave');
 
         if (!Validaciones.validarFormulario('#form-cambiar-clave')) return;
@@ -272,6 +284,10 @@ $(function () {
             Validaciones._mostrarError('#clave-nueva', 'La contraseña debe tener al menos 6 caracteres.');
             return;
         }
+
+        cambiandoClave = true;
+        var $btn = $(this).find('button[type="submit"]');
+        $btn.prop('disabled', true);
 
         Ajax.post(window.ROUTES.perfil_cambiar_clave, $(this).serialize())
             .done(function (res) {
@@ -293,6 +309,10 @@ $(function () {
                 var msg = 'Error al cambiar contraseña.';
                 try { var r = JSON.parse(xhr.responseText); if (r.mensaje) msg = r.mensaje; } catch (e) {}
                 Swal.fire({ icon: 'error', title: 'Error', text: msg });
+            })
+            .always(function () {
+                cambiandoClave = false;
+                $btn.prop('disabled', false);
             });
     });
 
