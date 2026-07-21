@@ -8,14 +8,55 @@ class Cliente extends Model
 {
     protected string $table = 'cliente';
 
-    public function obtenerTodos(): array
+    public function obtenerTodosPaginado(int $start, int $length, string $search, string $orderBy, string $orderDir): array
     {
-        return $this->fetchAll(
-            "SELECT c.*, e.tipo_equipo FROM {$this->table} c
-             INNER JOIN equipos_cliente e ON e.idEquipoCliente = c.idEquipoCliente
-             WHERE c.status = 1
-             ORDER BY c.cedula DESC"
-        );
+        $orderDir = strtoupper($orderDir) === 'DESC' ? 'DESC' : 'ASC';
+        $allowed = ['cedula', 'apellido', 'telefono', 'correo', 'tipo_equipo', 'status'];
+        $orderBy = in_array($orderBy, $allowed) ? $orderBy : 'cedula';
+
+        $sql = "SELECT c.cedula, c.nombre, c.segNombre, c.apellido, c.segApellido,
+                       c.telefono, c.correo, c.direccion, c.idEquipoCliente, c.status,
+                       e.tipo_equipo
+                FROM {$this->table} c
+                INNER JOIN equipos_cliente e ON e.idEquipoCliente = c.idEquipoCliente
+                WHERE c.status = 1";
+
+        $params = [];
+        if ($search !== '') {
+            $sql .= " AND (CAST(c.cedula AS CHAR) LIKE ? OR c.nombre LIKE ? OR c.apellido LIKE ? OR c.telefono LIKE ? OR c.correo LIKE ?)";
+            $s = '%' . $search . '%';
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
+        }
+
+        $sql .= " ORDER BY c.{$orderBy} {$orderDir}";
+        if ($length > 0) {
+            $sql .= " LIMIT {$start}, {$length}";
+        }
+
+        return $this->fetchAll($sql, $params);
+    }
+
+    public function contarClientes(string $search): int
+    {
+        $sql = "SELECT COUNT(*) AS total FROM {$this->table} c WHERE c.status = 1";
+        $params = [];
+
+        if ($search !== '') {
+            $sql .= " AND (CAST(c.cedula AS CHAR) LIKE ? OR c.nombre LIKE ? OR c.apellido LIKE ? OR c.telefono LIKE ? OR c.correo LIKE ?)";
+            $s = '%' . $search . '%';
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
+        }
+
+        $row = $this->fetch($sql, $params);
+        return (int) ($row['total'] ?? 0);
     }
 
     public function obtenerPorCedula(int $cedula): ?array

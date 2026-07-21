@@ -1,5 +1,5 @@
 /**
- * clientes.js - CRUD de Clientes con DataTables y validaciones en tiempo real
+ * clientes.js - CRUD de Clientes con DataTables server-side y validaciones en tiempo real
  */
 
 $(function () {
@@ -74,67 +74,103 @@ $(function () {
     });
 
     // ═══════════════════════════════════════════════════════
-    // CARGAR DATOS
+    // DATATABLE SERVER-SIDE
     // ═══════════════════════════════════════════════════════
 
-    function cargarClientes() {
-        Ajax.post(window.ROUTES.clientes_listar)
-            .done(function (res) {
-                const data = res.data || [];
-                const rows = data.map(function (c) {
-                    const estado = parseInt(c.status) === 1
-                        ? '<span class="badge bg-success bg-opacity-10 text-success px-2 py-1">Activo</span>'
-                        : '<span class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1">Inactivo</span>';
-                    const nombreCompleto = [c.nombre, c.segNombre, c.apellido, c.segApellido].filter(Boolean).join(' ');
-                    return {
-                        cedula: c.cedula,
-                        nombre: `<div class="fw-semibold">${nombreCompleto}</div>`,
-                        telefono: c.telefono || '—',
-                        correo: c.correo || '—',
-                        tipo: `<span class="badge bg-info bg-opacity-10 text-info px-2 py-1">${c.tipo_equipo || 'N/A'}</span>`,
-                        estado: estado,
-                        acciones: `
-                            <div class="text-end">
-                                <button class="btn btn-sm btn-outline-primary btn-editar-cliente" data-cedula="${c.cedula}" title="Editar">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger btn-eliminar-cliente" data-cedula="${c.cedula}" data-nombre="${nombreCompleto}" title="Eliminar">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        `
-                    };
-                });
-
-                if (tablaClientes) {
-                    tablaClientes.clear().destroy();
-                }
-
-                tablaClientes = $('#tabla-clientes').DataTable({
-                    data: rows,
-                    columns: [
-                        { data: 'cedula' },
-                        { data: 'nombre' },
-                        { data: 'telefono' },
-                        { data: 'correo' },
-                        { data: 'tipo' },
-                        { data: 'estado' },
-                        { data: 'acciones', orderable: false, searchable: false }
-                    ],
-                    responsive: true,
-                    language: {
-                        url: window.BASE_URL + '/assets/lib/datatables/js/es-ES.json'
+    function initDataTable() {
+        tablaClientes = $('#tabla-clientes').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: window.BASE_URL + window.ROUTES.clientes_listar,
+                type: 'POST'
+            },
+            columns: [
+                { data: 'cedula' },
+                {
+                    data: 'nombre',
+                    render: function (data, type, row) {
+                        if (type === 'display' || type === 'filter') {
+                            var partes = [row.nombre, row.segNombre, row.apellido, row.segApellido].filter(Boolean);
+                            return '<div class="fw-semibold">' + partes.join(' ') + '</div>';
+                        }
+                        return data;
+                    }
+                },
+                {
+                    data: 'telefono',
+                    render: function (data, type) {
+                        if (type === 'display' || type === 'filter') {
+                            return data || '—';
+                        }
+                        return data;
+                    }
+                },
+                {
+                    data: 'correo',
+                    render: function (data, type) {
+                        if (type === 'display' || type === 'filter') {
+                            return data || '—';
+                        }
+                        return data;
+                    }
+                },
+                {
+                    data: 'tipo_equipo',
+                    render: function (data, type) {
+                        if (type === 'display' || type === 'filter') {
+                            return '<span class="badge bg-info bg-opacity-10 text-info px-2 py-1">' + (data || 'N/A') + '</span>';
+                        }
+                        return data;
+                    }
+                },
+                {
+                    data: 'status',
+                    render: function (data, type) {
+                        if (type === 'display' || type === 'filter') {
+                            if (parseInt(data) === 1) {
+                                return '<span class="badge bg-success bg-opacity-10 text-success px-2 py-1">Activo</span>';
+                            }
+                            return '<span class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1">Inactivo</span>';
+                        }
+                        return data;
+                    }
+                },
+                {
+                    data: 'cedula',
+                    render: function (data, type, row) {
+                        if (type === 'display') {
+                            var partes = [row.nombre, row.segNombre, row.apellido, row.segApellido].filter(Boolean);
+                            var nombreCompleto = partes.join(' ');
+                            return '<div class="text-end">' +
+                                '<button class="btn btn-sm btn-outline-primary btn-editar-cliente" data-cedula="' + data + '" title="Editar">' +
+                                    '<i class="bi bi-pencil"></i>' +
+                                '</button>' +
+                                '<button class="btn btn-sm btn-outline-danger btn-eliminar-cliente" data-cedula="' + data + '" data-nombre="' + nombreCompleto + '" title="Eliminar">' +
+                                    '<i class="bi bi-trash"></i>' +
+                                '</button>' +
+                            '</div>';
+                        }
+                        return data;
                     },
-                    pageLength: 10,
-                    lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'Todos']],
-                    order: [[0, 'desc']],
-                    dom: '<"row mb-3"<"col-md-6"l><"col-md-6"f>>rtip'
-                });
-            }).fail(function () {
-                if (tablaClientes) tablaClientes.clear().destroy();
-                $('#tabla-clientes tbody').html('<tr><td colspan="7" class="text-center text-muted py-4">Error al cargar clientes</td></tr>');
-            });
+                    orderable: false,
+                    searchable: false
+                }
+            ],
+            responsive: true,
+            language: {
+                url: window.BASE_URL + '/assets/lib/datatables/js/es-ES.json'
+            },
+            pageLength: 10,
+            lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'Todos']],
+            order: [[0, 'desc']],
+            dom: '<"row mb-3"<"col-md-6"l><"col-md-6"f>>rtip'
+        });
     }
+
+    // ═══════════════════════════════════════════════════════
+    // CARGAR EQUIPOS
+    // ═══════════════════════════════════════════════════════
 
     function cargarEquipos() {
         Ajax.post(window.ROUTES.clientes_equipos_listar)
@@ -142,7 +178,7 @@ $(function () {
                 const data = res.data || [];
                 let opciones = '<option value="">Seleccione un tipo</option>';
                 data.forEach(function (e) {
-                    opciones += `<option value="${e.idEquipoCliente}">${e.tipo_equipo}</option>`;
+                    opciones += '<option value="' + e.idEquipoCliente + '">' + e.tipo_equipo + '</option>';
                 });
                 $('#cliente-equipo').html(opciones);
                 $('#cliente-equipo').select2({
@@ -204,7 +240,7 @@ $(function () {
                         Swal.fire({
                             icon: 'warning',
                             title: 'Cliente con ventas',
-                            text: `El cliente "${nombre}" tiene ${res.count} venta(s) registrada(s) y no puede ser eliminado.`
+                            text: 'El cliente "' + nombre + '" tiene ' + res.count + ' venta(s) registrada(s) y no puede ser eliminado.'
                         });
                     }
                     return;
@@ -214,7 +250,7 @@ $(function () {
                     Swal.fire({
                         icon: 'warning',
                         title: '¿Eliminar cliente?',
-                        text: `¿Estás seguro de eliminar a ${nombre}?`,
+                        text: '¿Estás seguro de eliminar a ' + nombre + '?',
                         showCancelButton: true,
                         confirmButtonText: 'Sí, eliminar',
                         cancelButtonText: 'Cancelar',
@@ -226,15 +262,15 @@ $(function () {
                                     if (typeof Swal !== 'undefined') {
                                         Swal.fire({ icon: 'success', title: 'Éxito', text: (res && res.mensaje) || 'Eliminado correctamente.', timer: 2500, showConfirmButton: false });
                                     }
-                                    cargarClientes();
+                                    tablaClientes.ajax.reload(null, false);
                                 });
                         }
                     });
                 } else {
-                    if (confirm(`¿Estás seguro de eliminar a ${nombre}?`)) {
+                    if (confirm('¿Estás seguro de eliminar a ' + nombre + '?')) {
                         Ajax.post(window.ROUTES.clientes_eliminar, { cedula: cedula })
                             .done(function (res) {
-                                cargarClientes();
+                                tablaClientes.ajax.reload(null, false);
                             });
                     }
                 }
@@ -257,7 +293,7 @@ $(function () {
                     Swal.fire({ icon: 'success', title: 'Éxito', text: (res && res.mensaje) || 'Operación completada.', timer: 2500, showConfirmButton: false });
                 }
                 modalCliente.hide();
-                cargarClientes();
+                tablaClientes.ajax.reload(null, false);
             }).fail(function (xhr) {
                 var msg = 'Error al guardar cliente.';
                 try { var r = JSON.parse(xhr.responseText); if (r && r.mensaje) msg = r.mensaje; } catch (e) {}
@@ -273,7 +309,7 @@ $(function () {
     // INICIALIZAR
     // ═══════════════════════════════════════════════════════
 
-    cargarClientes();
+    initDataTable();
     cargarEquipos();
 
 });

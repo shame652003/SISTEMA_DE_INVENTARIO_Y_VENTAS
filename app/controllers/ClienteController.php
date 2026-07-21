@@ -20,9 +20,31 @@ class ClienteController extends Controller
     public function listar(): void
     {
         if (!$this->verificarPermiso('clientes')) return;
+
+        $draw    = (int) ($_POST['draw'] ?? 1);
+        $start   = max(0, (int) ($_POST['start'] ?? 0));
+        $length  = (int) ($_POST['length'] ?? 10);
+        if ($length < 1 && $length !== -1) {
+            $length = 10;
+        }
+        $search  = $_POST['search']['value'] ?? '';
+
+        $colMap  = ['cedula', 'apellido', 'telefono', 'correo', 'tipo_equipo', 'status'];
+        $colIdx  = (int) ($_POST['order'][0]['column'] ?? 0);
+        $orderBy = $colMap[$colIdx] ?? 'cedula';
+        $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
+
         $cliente = new Cliente();
-        $clientes = $cliente->obtenerTodos();
-        $this->json(['data' => $clientes ?: []]);
+        $data = $cliente->obtenerTodosPaginado($start, $length, $search, $orderBy, $orderDir);
+        $totalFiltrado = $cliente->contarClientes($search);
+        $totalSinFiltro = $cliente->contarClientes('');
+
+        $this->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $totalSinFiltro,
+            'recordsFiltered' => $totalFiltrado,
+            'data'            => $data ?: [],
+        ]);
     }
 
     public function obtener(): void
@@ -60,15 +82,35 @@ class ClienteController extends Controller
             return;
         }
 
+        $cedulaInt = (int) $cedula;
+        if ($cedulaInt <= 0 || $cedulaInt > 999999999) {
+            $this->json(['ok' => false, 'mensaje' => 'Cédula fuera de rango válido.'], 400);
+            return;
+        }
+
+        if ($correo !== '' && !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            $this->json(['ok' => false, 'mensaje' => 'Correo electrónico inválido.'], 400);
+            return;
+        }
+
+        if ($telefono !== '' && !preg_match('/^[\d\-\(\)\+\s]{7,20}$/', $telefono)) {
+            $this->json(['ok' => false, 'mensaje' => 'Teléfono inválido. Use solo dígitos, guiones, paréntesis o +.'], 400);
+            return;
+        }
+
+        if (!in_array((int) $status, [0, 1], true)) {
+            $status = 1;
+        }
+
         $cliente = new Cliente();
 
         if (empty($id)) {
-            if ($cliente->existeCedula((int) $cedula)) {
+            if ($cliente->existeCedula($cedulaInt)) {
                 $this->json(['ok' => false, 'mensaje' => "La cédula $cedula ya está registrada."], 409);
                 return;
             }
             $datos = [
-                'cedula' => $cedula,
+                'cedula' => $cedulaInt,
                 'nombre' => $nombre,
                 'segNombre' => $segNombre,
                 'apellido' => $apellido,
@@ -76,8 +118,8 @@ class ClienteController extends Controller
                 'direccion' => $direccion,
                 'correo' => $correo,
                 'telefono' => $telefono,
-                'idEquipoCliente' => $idEquipoCliente,
-                'status' => $status,
+                'idEquipoCliente' => (int) $idEquipoCliente,
+                'status' => (int) $status,
             ];
             $ok = $cliente->crear($datos);
             $mensaje = $ok ? 'Cliente creado correctamente.' : 'Error al crear cliente.';
@@ -90,8 +132,8 @@ class ClienteController extends Controller
                 'direccion' => $direccion,
                 'correo' => $correo,
                 'telefono' => $telefono,
-                'idEquipoCliente' => $idEquipoCliente,
-                'status' => $status,
+                'idEquipoCliente' => (int) $idEquipoCliente,
+                'status' => (int) $status,
             ];
             $ok = $cliente->actualizar((int) $id, $datos);
             $mensaje = $ok ? 'Cliente actualizado correctamente.' : 'Error al actualizar cliente.';
