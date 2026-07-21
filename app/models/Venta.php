@@ -16,12 +16,24 @@ class Venta extends Model
 
     public function obtenerTasaBcv(): float
     {
-        $json = @file_get_contents('https://ve.dolarapi.com/v1/dolares/oficial');
-        if ($json) {
+        $ch = curl_init('https://ve.dolarapi.com/v1/dolares/oficial');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 3,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $json = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($json && $httpCode === 200) {
             $data = json_decode($json, true);
             $tasa = $data['promedio'] ?? 0;
             if ($tasa > 0) return (float) $tasa;
         }
+
         $tasa = $this->fetch(
             "SELECT tasa_ves_por_usd FROM bcv_tasas WHERE status = 1 ORDER BY fecha_tasa DESC LIMIT 1"
         );
@@ -53,17 +65,45 @@ class Venta extends Model
 
     public function buscarClientes(string $q): array
     {
-        $q = '%' . $q . '%';
+        $q = trim($q);
+
+        if (is_numeric($q)) {
+            return $this->fetchAll(
+                "SELECT c.cedula AS id,
+                        CONCAT(c.cedula, ' - ', c.nombre, ' ', COALESCE(c.apellido, '')) AS text,
+                        c.cedula, c.nombre, c.apellido, c.telefono, c.correo, c.direccion,
+                        e.tipo_equipo,
+                        COALESCE(cr.saldo_deudor_usd, 0) AS saldo_deudor_usd,
+                        COALESCE(cr.saldo_deudor_bcv, 0) AS saldo_deudor_bcv
+                 FROM cliente c
+                 LEFT JOIN equipos_cliente e ON e.idEquipoCliente = c.idEquipoCliente
+                 LEFT JOIN creditos cr ON cr.cedula_cliente = c.cedula
+                 WHERE c.status = 1
+                   AND CAST(c.cedula AS CHAR) LIKE ?
+                 ORDER BY c.nombre
+                 LIMIT 20",
+                [$q . '%']
+            );
+        }
+
+        $words = array_filter(explode(' ', $q));
+        $ftQ = '+' . implode('* +', $words) . '*';
+
         return $this->fetchAll(
             "SELECT c.cedula AS id,
                     CONCAT(c.cedula, ' - ', c.nombre, ' ', COALESCE(c.apellido, '')) AS text,
-                    c.cedula, c.nombre, c.apellido, c.telefono, c.correo, c.direccion
+                    c.cedula, c.nombre, c.apellido, c.telefono, c.correo, c.direccion,
+                    e.tipo_equipo,
+                    COALESCE(cr.saldo_deudor_usd, 0) AS saldo_deudor_usd,
+                    COALESCE(cr.saldo_deudor_bcv, 0) AS saldo_deudor_bcv
              FROM cliente c
+             LEFT JOIN equipos_cliente e ON e.idEquipoCliente = c.idEquipoCliente
+             LEFT JOIN creditos cr ON cr.cedula_cliente = c.cedula
              WHERE c.status = 1
-               AND (c.cedula LIKE ? OR CONCAT(c.nombre, ' ', COALESCE(c.apellido, '')) LIKE ?)
+               AND MATCH(c.nombre, c.apellido) AGAINST(? IN BOOLEAN MODE)
              ORDER BY c.nombre
              LIMIT 20",
-            [$q, $q]
+            [$ftQ]
         );
     }
 
@@ -83,7 +123,10 @@ class Venta extends Model
 
     public function buscarProductos(string $q): array
     {
-        $q = '%' . $q . '%';
+        $q = trim($q);
+        $words = array_filter(explode(' ', $q));
+        $ftQ = '+' . implode('* +', $words) . '*';
+
         return $this->fetchAll(
             "SELECT p.idproducto AS id,
                     CONCAT(p.codigo, ' - ', p.nombre,
@@ -95,10 +138,10 @@ class Venta extends Model
              FROM producto p
              INNER JOIN tipo_productos tp ON tp.idTipoA = p.idTipoA
              WHERE p.status = 1
-               AND (p.codigo LIKE ? OR p.nombre LIKE ?)
+               AND MATCH(p.codigo, p.nombre, p.marca) AGAINST(? IN BOOLEAN MODE)
              ORDER BY p.nombre
              LIMIT 20",
-            [$q, $q]
+            [$ftQ]
         );
     }
 

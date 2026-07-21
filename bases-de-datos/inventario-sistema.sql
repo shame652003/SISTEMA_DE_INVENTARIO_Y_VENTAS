@@ -362,12 +362,14 @@ CREATE INDEX idx_margen_status_tipo_fecha ON margen_ganancia (status, tipo_preci
 CREATE INDEX idx_producto_status_stock ON producto (status, stock);
 CREATE INDEX idx_producto_stock_bajo ON producto (status, stock, stock_minimo);
 CREATE INDEX idx_producto_nombre_marca ON producto (nombre, marca);
+ALTER TABLE producto ADD FULLTEXT INDEX ft_producto_search (codigo, nombre, marca);
 CREATE INDEX idx_producto_precio_historial_producto_fecha ON producto_precio_historial (idproducto, fecha_calculo);
 CREATE INDEX idx_entrada_fecha ON entradaproducto (fecha, hora);
 CREATE INDEX idx_detalle_entrada_producto ON detalleEntradaA (idproducto);
 CREATE INDEX idx_salida_fecha_tipo ON salidas_de_productos (fecha, idTipoSalidaA);
 CREATE INDEX idx_salida_producto_fecha ON salidas_de_productos (idproducto, fecha);
 CREATE INDEX idx_cliente_nombre ON cliente (apellido, nombre);
+ALTER TABLE cliente ADD FULLTEXT INDEX ft_cliente_search (nombre, apellido);
 CREATE INDEX idx_venta_fecha ON ventas_encabezado (fecha, hora);
 CREATE INDEX idx_venta_cliente_fecha ON ventas_encabezado (cedula_cliente, fecha);
 CREATE INDEX idx_venta_usuario_fecha ON ventas_encabezado (cedula_usuario, fecha);
@@ -1374,6 +1376,13 @@ DELIMITER ;
 -- DROP VIEW IF EXISTS vw_pagos_por_tipo;
 -- DROP VIEW IF EXISTS vw_resumen_dashboard;
 -- Luego recrear todas las vistas con las nuevas definiciones de arriba.
+-- ==========================================
+
+-- ==========================================
+-- 10. MIGRACION: Indices FULLTEXT (busqueda rapida)
+-- Si la DB ya existe, ejecutar:
+-- ALTER TABLE producto ADD FULLTEXT INDEX ft_producto_search (codigo, nombre, marca);
+-- ALTER TABLE cliente ADD FULLTEXT INDEX ft_cliente_search (nombre, apellido);
 -- ==========================================
 
 COMMIT;

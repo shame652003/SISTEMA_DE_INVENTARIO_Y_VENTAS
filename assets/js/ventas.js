@@ -152,12 +152,12 @@ $(function () {
         $('#select-cliente').select2({
             placeholder: 'Buscar cliente por cedula o nombre...',
             allowClear: true,
-            minimumInputLength: 1,
+            minimumInputLength: 2,
             ajax: {
                 url: window.BASE_URL + window.ROUTES.ventas_clientes_buscar,
                 type: 'POST',
                 dataType: 'json',
-                delay: 300,
+                delay: 200,
                 data: function (params) {
                     return { q: params.term };
                 },
@@ -178,7 +178,7 @@ $(function () {
                 url: window.BASE_URL + window.ROUTES.ventas_productos_buscar,
                 type: 'POST',
                 dataType: 'json',
-                delay: 300,
+                delay: 200,
                 data: function (params) {
                     return { q: params.term };
                 },
@@ -233,13 +233,10 @@ $(function () {
     }
 
     $('#select-cliente').on('select2:select', function (e) {
-        var cliente = e.params.data;
-        Ajax.post(window.ROUTES.ventas_cliente_info, { cedula: cliente.id })
-            .done(function (res) {
-                if (res.ok && res.data) {
-                    mostrarInfoCliente(res.data);
-                }
-            });
+        var c = e.params.data;
+        if (c && c.cedula) {
+            mostrarInfoCliente(c);
+        }
     });
 
     $('#select-cliente').on('select2:clear', function () {
@@ -322,52 +319,48 @@ $(function () {
     /* ===== Eventos Producto ===== */
 
     $('#select-producto').on('select2:select', function (e) {
-        var producto = e.params.data;
-        $('#producto-id').val(producto.id);
+        var p = e.params.data;
+        if (!p || !p.id) return;
 
-        Ajax.post(window.ROUTES.ventas_producto_info, { id: producto.id })
-            .done(function (res) {
-                if (res.ok && res.data) {
-                    var p = res.data;
-                    var stock = parseFloat(p.stock) || 0;
-                    var precioUsd = parseFloat(p.precio_venta_usd) || 0;
-                    var precioVes = parseFloat(p.precio_venta_ves) || 0;
-                    var costoUsd = parseFloat(p.precio_costo_usd) || 0;
-                    var precioBcv = calcPrecioBcv(precioVes);
+        $('#producto-id').val(p.id);
 
-                    $('#producto-costo-usd').val(costoUsd);
-                    $('#producto-precio-usd').val(precioUsd);
-                    $('#producto-precio-ves').val(precioVes);
+        var stock = parseFloat(p.stock) || 0;
+        var precioUsd = parseFloat(p.precio_venta_usd) || 0;
+        var precioVes = parseFloat(p.precio_venta_ves) || 0;
+        var costoUsd = parseFloat(p.precio_costo_usd) || 0;
+        var precioBcv = calcPrecioBcv(precioVes);
 
-                    $('#info-producto-codigo').text(p.codigo || 'N/A');
-                    $('#info-producto-nombre').text(p.nombre);
-                    $('#info-producto-tipo').text(p.tipo_producto || 'N/A');
-                    $('#info-producto-marca').text(p.marca || 'Sin marca');
+        $('#producto-costo-usd').val(costoUsd);
+        $('#producto-precio-usd').val(precioUsd);
+        $('#producto-precio-ves').val(precioVes);
 
-                    if (p.imgproducto) {
-                        imagenProductoActual = window.BASE_URL + '/' + p.imgproducto;
-                        $('#img-producto-venta').attr('src', imagenProductoActual);
-                        $('#img-producto-venta-container').removeClass('d-none');
-                    } else {
-                        imagenProductoActual = '';
-                        $('#img-producto-venta-container').addClass('d-none');
-                    }
+        $('#info-producto-codigo').text(p.codigo || 'N/A');
+        $('#info-producto-nombre').text(p.nombre);
+        $('#info-producto-tipo').text(p.tipo_producto || 'N/A');
+        $('#info-producto-marca').text(p.marca || 'Sin marca');
 
-                    var stockClass = 'text-success';
-                    if (stock === 0) stockClass = 'text-danger';
-                    else if (stock <= parseFloat(p.stock_minimo || 0)) stockClass = 'text-warning';
-                    $('#info-producto-stock').html('<span class="' + stockClass + '">' + stock.toFixed(0) + '</span>');
+        if (p.imgproducto) {
+            imagenProductoActual = window.BASE_URL + '/' + p.imgproducto;
+            $('#img-producto-venta').attr('src', imagenProductoActual);
+            $('#img-producto-venta-container').removeClass('d-none');
+        } else {
+            imagenProductoActual = '';
+            $('#img-producto-venta-container').addClass('d-none');
+        }
 
-                    $('#info-producto-precio-usd').text('$' + formatoUsd.format(precioUsd));
-                    $('#info-producto-precio-ves').text('Bs. ' + formatoVes.format(precioVes));
-                    $('#info-producto-precio-bcv').text('$' + formatoUsd.format(precioBcv));
+        var stockClass = 'text-success';
+        if (stock === 0) stockClass = 'text-danger';
+        else if (stock <= parseFloat(p.stock_minimo || 0)) stockClass = 'text-warning';
+        $('#info-producto-stock').html('<span class="' + stockClass + '">' + stock.toFixed(0) + '</span>');
 
-                    $('#info-producto').removeClass('d-none').hide().fadeIn(300);
-                    $('#form-carrito-container').removeClass('d-none').hide().fadeIn(400);
+        $('#info-producto-precio-usd').text('$' + formatoUsd.format(precioUsd));
+        $('#info-producto-precio-ves').text('Bs. ' + formatoVes.format(precioVes));
+        $('#info-producto-precio-bcv').text('$' + formatoUsd.format(precioBcv));
 
-                    $('#cantidad').val('1').trigger('input');
-                }
-            });
+        $('#info-producto').removeClass('d-none').hide().fadeIn(300);
+        $('#form-carrito-container').removeClass('d-none').hide().fadeIn(400);
+
+        $('#cantidad').val('1').trigger('input');
     });
 
     $('#select-producto').on('select2:clear', function () {
