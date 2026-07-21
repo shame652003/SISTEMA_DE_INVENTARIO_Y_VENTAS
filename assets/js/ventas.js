@@ -52,6 +52,73 @@ $(function () {
         return 0;
     }
 
+    function calcVesDesdeUsd(precioUsd) {
+        if (tasaBcv > 0) return precioUsd * tasaBcv;
+        return 0;
+    }
+
+    function redistribuirPagos(indexEditado) {
+        if (pagos.length < 2) return;
+        var totalSegunMoneda = monedaGlobal === 'USD' ? getTotalUsdCarrito() : getTotalVesCarrito();
+        var montoEditado = parseFloat(pagos[indexEditado].monto_recibido) || 0;
+        var restante = totalSegunMoneda - montoEditado;
+        if (restante < 0) restante = 0;
+
+        var otrosCount = pagos.length - 1;
+        if (otrosCount <= 0) return;
+        var montoPorOtro = Math.floor((restante / otrosCount) * 100) / 100;
+        var montoPrimerOtro = Math.round((restante - montoPorOtro * (otrosCount - 1)) * 100) / 100;
+
+        var idxOtro = 0;
+        for (var i = 0; i < pagos.length; i++) {
+            if (i === indexEditado) continue;
+            var monto = (idxOtro === 0) ? montoPrimerOtro : montoPorOtro;
+            pagos[i].monto_recibido = monto;
+            if (monedaGlobal === 'VES') {
+                pagos[i].monto_equivalente = calcPrecioBcv(monto);
+            }
+
+            $('.input-monto-pago[data-index="' + i + '"]').val(monto.toFixed(2));
+            if (monedaGlobal === 'VES') {
+                var eq = pagos[i].monto_equivalente;
+                $('.input-monto-equivalente-pago[data-index="' + i + '"]').val(eq ? eq.toFixed(2) : '');
+            }
+            idxOtro++;
+        }
+
+        for (var j = 0; j < pagos.length; j++) {
+            validarMontoPago(j);
+        }
+    }
+
+    function validarMontoPago(index) {
+        var totalSegunMoneda = monedaGlobal === 'USD' ? getTotalUsdCarrito() : getTotalVesCarrito();
+        var sumaTodos = 0;
+        for (var i = 0; i < pagos.length; i++) {
+            sumaTodos += parseFloat(pagos[i].monto_recibido) || 0;
+        }
+        var excedente = sumaTodos - totalSegunMoneda;
+
+        var $montoInput = $('.input-monto-pago[data-index="' + index + '"]');
+        var $eqInput = $('.input-monto-equivalente-pago[data-index="' + index + '"]');
+        var $msgMonto = $montoInput.closest('.monto-col').find('.invalid-feedback-monto');
+        var $msgEq = $eqInput.closest('.monto-col-eq').find('.invalid-feedback-monto');
+
+        if (excedente > 0.005) {
+            var signo = monedaGlobal === 'USD' ? '$' : 'Bs. ';
+            var fmt = monedaGlobal === 'USD' ? formatoUsd : formatoVes;
+            $montoInput.addClass('is-invalid');
+            if ($eqInput.length) $eqInput.addClass('is-invalid');
+            $msgMonto.text('Supera el total en ' + signo + fmt.format(excedente));
+            if ($msgEq.length) $msgEq.text('Supera el total en ' + signo + fmt.format(excedente));
+        } else {
+            $montoInput.removeClass('is-invalid');
+            if ($eqInput.length) $eqInput.removeClass('is-invalid');
+            $msgMonto.text('');
+            if ($msgEq.length) $msgEq.text('');
+        }
+    }
+
     /* ===== Select2 Clientes ===== */
 
     function initSelect2Cliente() {
@@ -402,6 +469,8 @@ $(function () {
         $container.empty();
 
         if (carrito.length === 0) {
+            pagos = [];
+            renderPagos();
             $container.html('<p class="text-muted text-center mb-0 py-3" id="carrito-vacio">Sin productos en el carrito</p>');
             $('#carrito-footer').addClass('d-none');
             $('#carrito-contador').text('0');
@@ -562,15 +631,49 @@ $(function () {
             pagos[index].idtipo_de_pagos = idTipo;
         }
         verificarCredito();
+        renderPagos();
         actualizarResumenPagos();
     });
 
     $(document).on('input', '.input-monto-pago', function () {
         var index = $(this).data('index');
+        var monto = parseFloat($(this).val()) || 0;
         if (pagos[index]) {
-            pagos[index].monto_recibido = parseFloat($(this).val()) || 0;
+            pagos[index].monto_recibido = monto;
+            if (monedaGlobal === 'VES') {
+                pagos[index].monto_equivalente = calcPrecioBcv(monto);
+            }
         }
+        if (monedaGlobal === 'VES') {
+            var eqVal = pagos[index] ? pagos[index].monto_equivalente : 0;
+            $('.input-monto-equivalente-pago[data-index="' + index + '"]').val(eqVal ? eqVal.toFixed(2) : '');
+        }
+        validarMontoPago(index);
+        redistribuirPagos(index);
         actualizarResumenPagos();
+    });
+
+    $(document).on('input', '.input-monto-equivalente-pago', function () {
+        var index = $(this).data('index');
+        var montoEq = parseFloat($(this).val()) || 0;
+        var montoPrincipal = tasaBcv > 0 ? parseFloat((montoEq * tasaBcv).toFixed(2)) : 0;
+
+        if (pagos[index]) {
+            pagos[index].monto_equivalente = montoEq;
+            pagos[index].monto_recibido = montoPrincipal;
+        }
+        $('.input-monto-pago[data-index="' + index + '"]').val(montoPrincipal.toFixed(2));
+
+        validarMontoPago(index);
+        redistribuirPagos(index);
+        actualizarResumenPagos();
+    });
+
+    $(document).on('blur', '.input-monto-pago, .input-monto-equivalente-pago', function () {
+        var val = parseFloat($(this).val());
+        if (!isNaN(val)) {
+            $(this).val(val.toFixed(2));
+        }
     });
 
     $(document).on('input', '.input-referencia-pago', function () {
@@ -580,23 +683,50 @@ $(function () {
         }
     });
 
+    $(document).on('change', '.toggle-referencia', function () {
+        var index = $(this).data('index');
+        var $row = $(this).closest('.pago-fila');
+        var $refRow = $row.find('.referencia-row');
+        var $refInput = $refRow.find('.input-referencia-pago');
+
+        if ($(this).is(':checked')) {
+            $refRow.slideDown(150);
+            setTimeout(function () { $refInput.focus(); }, 200);
+        } else {
+            $refRow.slideUp(150);
+            if (pagos[index]) pagos[index].referencia = '';
+            $refInput.val('');
+        }
+    });
+
     function agregarFilaPago() {
         var totalSegunMoneda = monedaGlobal === 'USD' ? getTotalUsdCarrito() : getTotalVesCarrito();
-        var nuevoTotal = pagos.length + 1;
         var tiposFiltrados = tiposPagoPorMoneda();
 
+        var idsUsados = pagos.map(function (p) { return p.idtipo_de_pagos; });
+        var primerDisponible = 0;
+        for (var k = 0; k < tiposFiltrados.length; k++) {
+            if (idsUsados.indexOf(tiposFiltrados[k].idtipo_de_pagos) < 0) {
+                primerDisponible = tiposFiltrados[k].idtipo_de_pagos;
+                break;
+            }
+        }
+
         pagos.push({
-            idtipo_de_pagos: tiposFiltrados.length > 0 ? tiposFiltrados[0].idtipo_de_pagos : 0,
+            idtipo_de_pagos: primerDisponible,
             moneda: monedaGlobal,
             monto_recibido: 0,
+            monto_equivalente: 0,
             referencia: ''
         });
 
-        if (nuevoTotal > 1 && totalSegunMoneda > 0) {
-            var montoBase = Math.round((totalSegunMoneda / nuevoTotal) * 100) / 100;
-            var montoPrimeros = Math.round((totalSegunMoneda - montoBase * (nuevoTotal - 1)) * 100) / 100;
+        if (pagos.length > 1 && totalSegunMoneda > 0) {
+            var montoBase = Math.round((totalSegunMoneda / pagos.length) * 100) / 100;
+            var montoPrimeros = Math.round((totalSegunMoneda - montoBase * (pagos.length - 1)) * 100) / 100;
             for (var i = 0; i < pagos.length; i++) {
-                pagos[i].monto_recibido = (i === 0) ? montoPrimeros : montoBase;
+                var monto = (i === 0) ? montoPrimeros : montoBase;
+                pagos[i].monto_recibido = monto;
+                pagos[i].monto_equivalente = monedaGlobal === 'USD' ? calcVesDesdeUsd(monto) : calcPrecioBcv(monto);
             }
         }
 
@@ -618,10 +748,13 @@ $(function () {
 
         var esUnSoloPago = pagos.length === 1;
         var totalSegunMoneda = monedaGlobal === 'USD' ? getTotalUsdCarrito() : getTotalVesCarrito();
-        var signoMoneda = monedaGlobal === 'USD' ? '$' : 'Bs.';
+        var esModoVes = monedaGlobal === 'VES';
 
         if (esUnSoloPago && totalSegunMoneda > 0) {
             pagos[0].monto_recibido = totalSegunMoneda;
+            if (esModoVes) {
+                pagos[0].monto_equivalente = calcPrecioBcv(totalSegunMoneda);
+            }
         }
 
         pagos.forEach(function (pago, index) {
@@ -635,33 +768,87 @@ $(function () {
                 var checked = pago.idtipo_de_pagos == tp.idtipo_de_pagos ? ' checked' : '';
                 var btnClass = esCredito ? 'btn-outline-danger' : 'btn-outline-primary';
 
+                var usadoEnOtro = pagos.some(function (p, idx) {
+                    return idx !== index && p.idtipo_de_pagos == tp.idtipo_de_pagos;
+                });
+                var disabledAttr = usadoEnOtro ? ' disabled' : '';
+                var disabledClass = usadoEnOtro ? ' opacity-50 pe-none' : '';
+
                 $btnGroup.append(
-                    '<input type="radio" class="btn-check radio-tipo-pago" name="pago-tipo-' + index + '" id="' + radioId + '" value="' + tp.idtipo_de_pagos + '" data-index="' + index + '"' + checked + '>' +
-                    '<label class="btn btn-sm ' + btnClass + '" for="' + radioId + '">' + tp.tipoPago + '</label>'
+                    '<input type="radio" class="btn-check radio-tipo-pago" name="pago-tipo-' + index + '" id="' + radioId + '" value="' + tp.idtipo_de_pagos + '" data-index="' + index + '"' + checked + disabledAttr + '>' +
+                    '<label class="btn btn-sm ' + btnClass + disabledClass + '" for="' + radioId + '">' + tp.tipoPago + '</label>'
                 );
             });
 
             var readonlyAttr = esUnSoloPago ? ' readonly' : '';
             var readonlyClass = esUnSoloPago ? ' bg-light' : '';
 
-            var $filaMontos = $(
-                '<div class="row g-2 mt-2 align-items-end">' +
-                    '<div class="col-md-5">' +
-                        '<label class="form-label small mb-1">Monto ' + (monedaGlobal === 'USD' ? 'USD' : 'VES') + '</label>' +
-                        '<div class="input-group input-group-sm">' +
-                            '<span class="input-group-text">' + signoMoneda + '</span>' +
-                            '<input type="number" class="form-control input-monto-pago' + readonlyClass + '" data-index="' + index + '" value="' + (pago.monto_recibido ? pago.monto_recibido.toFixed(2) : '') + '" step="0.01" min="0.01" placeholder="0.00"' + readonlyAttr + '>' +
+            var mostrarAutoBadge = pagos.length > 1;
+            var autoBadge = mostrarAutoBadge ? ' <span class="badge bg-info ms-1 auto-badge">Auto</span>' : '';
+
+            var tieneRef = pago.referencia && pago.referencia.length > 0;
+            var refChecked = tieneRef ? ' checked' : '';
+            var refRowDisplay = tieneRef ? '' : ' style="display:none"';
+
+            if (esModoVes) {
+                var $filaMontos = $(
+                    '<div class="row g-2 mt-2 align-items-end">' +
+                        '<div class="col-md-5 monto-col">' +
+                            '<label class="form-label small mb-1">Monto VES' + autoBadge + '</label>' +
+                            '<div class="input-group input-group-sm">' +
+                                '<span class="input-group-text">Bs.</span>' +
+                                '<input type="number" class="form-control input-monto-pago' + readonlyClass + '" data-index="' + index + '" value="' + (pago.monto_recibido ? pago.monto_recibido.toFixed(2) : '') + '" step="0.01" min="0" placeholder="0.00"' + readonlyAttr + '>' +
+                            '</div>' +
+                            '<div class="invalid-feedback-monto text-danger small mt-1"></div>' +
+                        '</div>' +
+                        '<div class="col-md-3 monto-col-eq">' +
+                            '<label class="form-label small mb-1">≈ BCV</label>' +
+                            '<div class="input-group input-group-sm">' +
+                                '<span class="input-group-text">$</span>' +
+                                '<input type="number" class="form-control input-monto-equivalente-pago' + readonlyClass + '" data-index="' + index + '" value="' + (pago.monto_equivalente ? pago.monto_equivalente.toFixed(2) : '') + '" step="0.01" min="0" placeholder="0.00"' + readonlyAttr + '>' +
+                            '</div>' +
+                            '<div class="invalid-feedback-monto text-danger small mt-1"></div>' +
+                        '</div>' +
+                        '<div class="col-md-2 d-flex align-items-end gap-2">' +
+                            '<div class="form-check mb-2">' +
+                                '<input type="checkbox" class="form-check-input toggle-referencia" data-index="' + index + '"' + refChecked + '>' +
+                                '<label class="form-check-label small">Ref.</label>' +
+                            '</div>' +
+                            '<button class="btn btn-sm btn-outline-danger btn-eliminar-pago mb-2" data-index="' + index + '" title="Eliminar"><i class="bi bi-trash"></i></button>' +
                         '</div>' +
                     '</div>' +
-                    '<div class="col-md-4">' +
-                        '<label class="form-label small mb-1">Ref.</label>' +
-                        '<input type="text" class="form-control form-control-sm input-referencia-pago" data-index="' + index + '" value="' + (pago.referencia || '') + '" placeholder="Opcional" maxlength="100">' +
+                    '<div class="row mt-1 referencia-row"' + refRowDisplay + '>' +
+                        '<div class="col-md-8">' +
+                            '<input type="text" class="form-control form-control-sm input-referencia-pago" data-index="' + index + '" value="' + (pago.referencia || '') + '" placeholder="N° de referencia" maxlength="100">' +
+                        '</div>' +
+                    '</div>'
+                );
+            } else {
+                var $filaMontos = $(
+                    '<div class="row g-2 mt-2 align-items-end">' +
+                        '<div class="col-md-7 monto-col">' +
+                            '<label class="form-label small mb-1">Monto USD' + autoBadge + '</label>' +
+                            '<div class="input-group input-group-sm">' +
+                                '<span class="input-group-text">$</span>' +
+                                '<input type="number" class="form-control input-monto-pago' + readonlyClass + '" data-index="' + index + '" value="' + (pago.monto_recibido ? pago.monto_recibido.toFixed(2) : '') + '" step="0.01" min="0" placeholder="0.00"' + readonlyAttr + '>' +
+                            '</div>' +
+                            '<div class="invalid-feedback-monto text-danger small mt-1"></div>' +
+                        '</div>' +
+                        '<div class="col-md-3 d-flex align-items-end gap-2">' +
+                            '<div class="form-check mb-2">' +
+                                '<input type="checkbox" class="form-check-input toggle-referencia" data-index="' + index + '"' + refChecked + '>' +
+                                '<label class="form-check-label small">Ref.</label>' +
+                            '</div>' +
+                            '<button class="btn btn-sm btn-outline-danger btn-eliminar-pago mb-2" data-index="' + index + '" title="Eliminar"><i class="bi bi-trash"></i></button>' +
+                        '</div>' +
                     '</div>' +
-                    '<div class="col-md-3 text-end">' +
-                        '<button class="btn btn-sm btn-outline-danger btn-eliminar-pago" data-index="' + index + '" title="Eliminar"><i class="bi bi-trash"></i></button>' +
-                    '</div>' +
-                '</div>'
-            );
+                    '<div class="row mt-1 referencia-row"' + refRowDisplay + '>' +
+                        '<div class="col-md-7">' +
+                            '<input type="text" class="form-control form-control-sm input-referencia-pago" data-index="' + index + '" value="' + (pago.referencia || '') + '" placeholder="N° de referencia" maxlength="100">' +
+                        '</div>' +
+                    '</div>'
+                );
+            }
 
             $row.append($btnGroup).append($filaMontos);
             $container.append($row);
