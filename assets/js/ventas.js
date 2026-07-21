@@ -14,6 +14,7 @@ $(function () {
     var clienteSeleccionado = null;
     var esCredito = false;
     var monedaGlobal = 'USD';
+    var catchAllIndex = 0;
     var imagenProductoActual = '';
 
     var formatoUsd = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -78,32 +79,38 @@ $(function () {
                 }
             }
         }
+        catchAllIndex = pagos.length - 1;
         renderPagos();
     }
 
     function redistribuirPagos(indexEditado) {
         if (pagos.length < 2) return;
-        if (indexEditado === pagos.length - 1) return;
+
+        if (indexEditado === pagos.length - 1) {
+            catchAllIndex = pagos.length - 2;
+        } else {
+            catchAllIndex = pagos.length - 1;
+        }
 
         var totalSegunMoneda = monedaGlobal === 'USD' ? getTotalUsdCarrito() : getTotalVesCarrito();
         var sumaOtros = 0;
         for (var i = 0; i < pagos.length; i++) {
-            if (i === pagos.length - 1) continue;
+            if (i === catchAllIndex) continue;
             sumaOtros += parseFloat(pagos[i].monto_recibido) || 0;
         }
         var restante = totalSegunMoneda - sumaOtros;
         if (restante < 0) restante = 0;
         restante = Math.round(restante * 100) / 100;
 
-        pagos[pagos.length - 1].monto_recibido = restante;
+        pagos[catchAllIndex].monto_recibido = restante;
         if (monedaGlobal === 'VES') {
-            pagos[pagos.length - 1].monto_equivalente = calcPrecioBcv(restante);
+            pagos[catchAllIndex].monto_equivalente = calcPrecioBcv(restante);
         }
 
-        $('.input-monto-pago[data-index="' + (pagos.length - 1) + '"]').val(restante.toFixed(2));
+        $('.input-monto-pago[data-index="' + catchAllIndex + '"]').val(restante.toFixed(2));
         if (monedaGlobal === 'VES') {
-            var eq = pagos[pagos.length - 1].monto_equivalente;
-            $('.input-monto-equivalente-pago[data-index="' + (pagos.length - 1) + '"]').val(eq ? eq.toFixed(2) : '');
+            var eq = pagos[catchAllIndex].monto_equivalente;
+            $('.input-monto-equivalente-pago[data-index="' + catchAllIndex + '"]').val(eq ? eq.toFixed(2) : '');
         }
 
         for (var j = 0; j < pagos.length; j++) {
@@ -747,6 +754,8 @@ $(function () {
             referencia: ''
         });
 
+        catchAllIndex = pagos.length - 1;
+
         if (pagos.length > 1 && totalSegunMoneda > 0) {
             var montoBase = Math.round((totalSegunMoneda / pagos.length) * 100) / 100;
             var montoPrimeros = Math.round((totalSegunMoneda - montoBase * (pagos.length - 1)) * 100) / 100;
@@ -810,8 +819,8 @@ $(function () {
             var readonlyAttr = esUnSoloPago ? ' readonly' : '';
             var readonlyClass = esUnSoloPago ? ' bg-light' : '';
 
-            var esUltimo = pagos.length > 1 && index === pagos.length - 1;
-            var autoBadge = esUltimo ? ' <span class="badge bg-info ms-1 auto-badge">Auto</span>' : '';
+            var esCatchAll = pagos.length > 1 && index === catchAllIndex;
+            var autoBadge = esCatchAll ? ' <span class="badge bg-info ms-1 auto-badge">Auto</span>' : '';
 
             var tieneRef = pago.referencia && pago.referencia.length > 0;
             var refChecked = tieneRef ? ' checked' : '';
@@ -1119,6 +1128,7 @@ $(function () {
         clienteSeleccionado = null;
         esCredito = false;
         monedaGlobal = 'USD';
+        catchAllIndex = 0;
         imagenProductoActual = '';
         $('#moneda-usd').prop('checked', true);
         renderCarrito();
