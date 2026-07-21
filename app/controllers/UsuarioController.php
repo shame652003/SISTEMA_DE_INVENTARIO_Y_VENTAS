@@ -23,10 +23,32 @@ class UsuarioController extends Controller
     public function listar(): void
     {
         if (!$this->verificarPermiso('usuarios')) return;
+
+        $draw    = (int) ($_POST['draw'] ?? 1);
+        $start   = max(0, (int) ($_POST['start'] ?? 0));
+        $length  = (int) ($_POST['length'] ?? 10);
+        if ($length < 1 && $length !== -1) {
+            $length = 10;
+        }
+        $search  = $_POST['search']['value'] ?? '';
+
+        $colMap  = ['cedula', 'nombre', 'nombre', 'correo', 'telefono', 'nombreRol', 'status'];
+        $colIdx  = (int) ($_POST['order'][0]['column'] ?? 1);
+        $orderBy = $colMap[$colIdx] ?? 'cedula';
+        $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'DESC');
+
         $usuario = new Usuario();
         $cedulaLogeado = AuthMiddleware::cedula();
-        $usuarios = $usuario->obtenerTodos($cedulaLogeado);
-        $this->json(['data' => $usuarios ?: []]);
+        $data = $usuario->obtenerTodosPaginado($start, $length, $search, $orderBy, $orderDir, $cedulaLogeado);
+        $totalFiltrado = $usuario->contarUsuarios($search, $cedulaLogeado);
+        $totalSinFiltro = $usuario->contarUsuarios('', $cedulaLogeado);
+
+        $this->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $totalSinFiltro,
+            'recordsFiltered' => $totalFiltrado,
+            'data'            => $data ?: [],
+        ]);
     }
 
     public function obtener(): void
@@ -62,6 +84,26 @@ class UsuarioController extends Controller
             return;
         }
 
+        $cedulaInt = (int) $cedula;
+        if ($cedulaInt <= 0 || $cedulaInt > 999999999) {
+            $this->json(['ok' => false, 'mensaje' => 'Cédula fuera de rango válido.'], 400);
+            return;
+        }
+
+        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            $this->json(['ok' => false, 'mensaje' => 'Correo electrónico inválido.'], 400);
+            return;
+        }
+
+        if (!preg_match('/^[\d\-\(\)\+\s]{7,20}$/', $telefono)) {
+            $this->json(['ok' => false, 'mensaje' => 'Teléfono inválido. Use solo dígitos, guiones, paréntesis o +.'], 400);
+            return;
+        }
+
+        if (!in_array((int) $status, [0, 1], true)) {
+            $status = 1;
+        }
+
         $usuario = new Usuario();
 
         if (empty($id)) {
@@ -80,25 +122,39 @@ class UsuarioController extends Controller
             }
         }
         $datos = [
-            'cedula' => $cedula,
+            'cedula' => $cedulaInt,
             'nombre' => $nombre,
             'segNombre' => $segNombre,
             'apellido' => $apellido,
             'segApellido' => $segApellido,
             'correo' => $correo,
             'telefono' => $telefono,
-            'idRol' => $idRol,
-            'status' => $status,
+            'idRol' => (int) $idRol,
+            'status' => (int) $status,
         ];
 
         // ─── Manejar imagen ───
         if (!empty($_FILES['imagen']['tmp_name'])) {
+            $allowedExt = ['jpg', 'jpeg', 'png', 'webp'];
+            $allowedMime = ['image/jpeg', 'image/png', 'image/webp'];
+            $ext = strtolower(pathinfo($_FILES['imagen']['name'], PATHINFO_EXTENSION));
+            $mime = $_FILES['imagen']['type'];
+
+            if (!in_array($ext, $allowedExt) || !in_array($mime, $allowedMime)) {
+                $this->json(['ok' => false, 'mensaje' => 'La imagen debe ser JPG, PNG o WEBP.'], 400);
+                return;
+            }
+
+            if ($_FILES['imagen']['size'] > 5 * 1024 * 1024) {
+                $this->json(['ok' => false, 'mensaje' => 'La imagen no puede superar los 5 MB.'], 400);
+                return;
+            }
+
             $uploadDir = dirname(__DIR__, 2) . '/public/uploads/usuarios/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
             }
-            $ext = pathinfo($_FILES['imagen']['name'], PATHINFO_EXTENSION);
-            $filename = 'usuario_' . $cedula . '_' . time() . '.' . $ext;
+            $filename = 'usuario_' . $cedulaInt . '_' . time() . '.' . $ext;
             $filepath = $uploadDir . $filename;
             if (move_uploaded_file($_FILES['imagen']['tmp_name'], $filepath)) {
                 $datos['img'] = BASE_URL . '/uploads/usuarios/' . $filename;
