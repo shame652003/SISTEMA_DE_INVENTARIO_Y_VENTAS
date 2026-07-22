@@ -734,12 +734,14 @@ $(function () {
         $('#abono-cliente-nombre').text(nombre + ' (C.I. ' + cedula + ')');
         $('#abono-vendedor').text(vendedor);
         $('#abono-monto').val('');
+        $('#abono-monto-ves').val('');
+        $('#abono-monto-bcv').val('');
         $('#abono-referencia').val('');
         $('#abono-restante-usd').text('$0.00');
         $('#abono-restante-bcv').text('$0.00');
         $('#abono-restante-ves').text('Bs. 0,00');
         $('#abono-moneda-usd').prop('checked', true);
-        $('#abono-simbolo').text('$');
+        mostrarColumnasMoneda('USD');
 
         if (modo === 'pagarTodo') {
             $('#abono-modal-header').removeClass('bg-success').addClass('bg-primary');
@@ -778,7 +780,8 @@ $(function () {
                     if (monedaActual === 'USD') {
                         $('#abono-monto').val(deudaUsd.toFixed(2));
                     } else {
-                        $('#abono-monto').val(Math.round(deudaVes * 100) / 100);
+                        $('#abono-monto-ves').val(Math.round(deudaVes * 100) / 100);
+                        $('#abono-monto-bcv').val(deudaBcv.toFixed(2));
                     }
                     actualizarRestante();
                 }
@@ -878,10 +881,22 @@ $(function () {
         }
     }
 
+    function mostrarColumnasMoneda(moneda) {
+        if (moneda === 'USD') {
+            $('#abono-monto-usd-col').show();
+            $('#abono-monto-ves-col').hide();
+            $('#abono-monto-bcv-col').hide();
+        } else {
+            $('#abono-monto-usd-col').hide();
+            $('#abono-monto-ves-col').show();
+            $('#abono-monto-bcv-col').show();
+        }
+    }
+
     // Toggle moneda en modal de abono
     $('input[name="abono-moneda"]').on('change', function () {
         var moneda = $(this).val();
-        $('#abono-simbolo').text(moneda === 'USD' ? '$' : 'Bs.');
+        mostrarColumnasMoneda(moneda);
 
         if (abonoModo === 'pagarTodo') {
             var tasa = parseFloat($('#abono-tasa-bcv').val()) || 0;
@@ -890,11 +905,15 @@ $(function () {
             if (moneda === 'USD') {
                 $('#abono-monto').val(deudaUsd.toFixed(2));
             } else {
-                $('#abono-monto').val(Math.round(deudaBcv * tasa * 100) / 100);
+                var deudaVes = deudaBcv * tasa;
+                $('#abono-monto-ves').val(Math.round(deudaVes * 100) / 100);
+                $('#abono-monto-bcv').val(deudaBcv.toFixed(2));
             }
             actualizarRestante();
         } else {
             $('#abono-monto').val('');
+            $('#abono-monto-ves').val('');
+            $('#abono-monto-bcv').val('');
         }
 
         actualizarMaxAbono();
@@ -906,19 +925,20 @@ $(function () {
         var tasa = parseFloat($('#abono-tasa-bcv').val()) || 0;
         var deudaUsd = parseFloat($('#abono-deuda-usd').text().replace(/[^0-9.,-]/g, '')) || 0;
         var deudaBcv = parseFloat($('#abono-deuda-bcv').text().replace(/[^0-9.,-]/g, '')) || 0;
+        var deudaVesVal = deudaBcv * tasa;
 
         if (moneda === 'USD') {
             $('#abono-monto').attr('max', deudaUsd.toFixed(2));
             $('#abono-max-hint').text('Máximo disponible: ' + formatoMoneda(deudaUsd, 'USD'));
         } else {
-            var deudaVes = deudaBcv * tasa;
-            $('#abono-monto').attr('max', Math.round(deudaVes * 100) / 100);
-            $('#abono-max-hint').text('Máximo disponible: ' + formatoMoneda(deudaVes, 'VES'));
+            $('#abono-monto-ves').attr('max', Math.round(deudaVesVal * 100) / 100);
+            $('#abono-monto-bcv').attr('max', deudaBcv.toFixed(2));
+            $('#abono-max-hint-ves').text('Máximo: ' + formatoMoneda(deudaVesVal, 'VES'));
+            $('#abono-max-hint-bcv').text('Máximo: ' + formatoMoneda(deudaBcv, 'USD'));
         }
     }
 
     function actualizarRestante() {
-        var monto = parseFloat($('#abono-monto').val()) || 0;
         var moneda = $('input[name="abono-moneda"]:checked').val();
         var tasa = parseFloat($('#abono-tasa-bcv').val()) || 0;
         var deudaUsd = parseFloat($('#abono-deuda-usd').text().replace(/[^0-9.,-]/g, '')) || 0;
@@ -926,9 +946,9 @@ $(function () {
 
         var montoBcv;
         if (moneda === 'USD') {
-            montoBcv = monto;
+            montoBcv = parseFloat($('#abono-monto').val()) || 0;
         } else {
-            montoBcv = tasa > 0 ? monto / tasa : 0;
+            montoBcv = parseFloat($('#abono-monto-bcv').val()) || 0;
         }
 
         var restanteUsd = Math.max(0, deudaUsd - montoBcv);
@@ -940,20 +960,56 @@ $(function () {
         $('#abono-restante-ves').text(formatoMoneda(restanteVes, 'VES'));
     }
 
-    // Cálculo en tiempo real del restante con validación visual
-    $('#abono-monto').on('input', function () {
-        var monto = parseFloat($(this).val()) || 0;
-        var max = parseFloat($(this).attr('max')) || 0;
-        var moneda = $('input[name="abono-moneda"]:checked').val();
-
+    function validarMontoAbono($input, max, moneda) {
+        var monto = parseFloat($input.val()) || 0;
         if (monto > max && max > 0) {
-            $(this).addClass('is-invalid');
-            $('#abono-max-hint').removeClass('text-muted').addClass('text-danger fw-bold')
+            $input.addClass('is-invalid');
+            var $hint = $input.closest('.col-md-6').find('small');
+            $hint.removeClass('text-muted').addClass('text-danger fw-bold')
                 .text('¡Monto excedido! Máximo: ' + formatoMoneda(max, moneda));
+            return false;
         } else {
-            $(this).removeClass('is-invalid');
+            $input.removeClass('is-invalid');
+            return true;
+        }
+    }
+
+    // USD input
+    $('#abono-monto').on('input', function () {
+        var max = parseFloat($(this).attr('max')) || 0;
+        if (validarMontoAbono($(this), max, 'USD')) {
             $('#abono-max-hint').removeClass('text-danger fw-bold').addClass('text-muted')
-                .text('Máximo disponible: ' + formatoMoneda(max, moneda));
+                .text('Máximo disponible: ' + formatoMoneda(max, 'USD'));
+            actualizarRestante();
+        }
+    });
+
+    // VES input → sync BCV
+    $('#abono-monto-ves').on('input', function () {
+        var tasa = parseFloat($('#abono-tasa-bcv').val()) || 0;
+        var ves = parseFloat($(this).val()) || 0;
+        var bcv = tasa > 0 ? parseFloat((ves / tasa).toFixed(2)) : 0;
+        $('#abono-monto-bcv').val(bcv);
+
+        var max = parseFloat($(this).attr('max')) || 0;
+        if (validarMontoAbono($(this), max, 'VES')) {
+            $('#abono-max-hint-ves').removeClass('text-danger fw-bold').addClass('text-muted')
+                .text('Máximo: ' + formatoMoneda(max, 'VES'));
+            actualizarRestante();
+        }
+    });
+
+    // BCV input → sync VES
+    $('#abono-monto-bcv').on('input', function () {
+        var tasa = parseFloat($('#abono-tasa-bcv').val()) || 0;
+        var bcv = parseFloat($(this).val()) || 0;
+        var ves = parseFloat((bcv * tasa).toFixed(2));
+        $('#abono-monto-ves').val(ves);
+
+        var max = parseFloat($(this).attr('max')) || 0;
+        if (validarMontoAbono($(this), max, 'USD')) {
+            $('#abono-max-hint-bcv').removeClass('text-danger fw-bold').addClass('text-muted')
+                .text('Máximo: ' + formatoMoneda(max, 'USD'));
             actualizarRestante();
         }
     });
@@ -963,11 +1019,20 @@ $(function () {
         var cedula = $('#abono-cedula').val();
         var idTipoPago = parseInt($('input[name="abono-metodo"]:checked').val()) || 0;
         var moneda = $('input[name="abono-moneda"]:checked').val();
-        var monto = parseFloat($('#abono-monto').val()) || 0;
-        var referencia = $('#abono-referencia').val().trim();
         var tasa = parseFloat($('#abono-tasa-bcv').val()) || 0;
         var deudaUsd = parseFloat($('#abono-deuda-usd').text().replace(/[^0-9.,-]/g, '')) || 0;
         var deudaBcv = parseFloat($('#abono-deuda-bcv').text().replace(/[^0-9.,-]/g, '')) || 0;
+
+        var monto, montoBcv;
+        if (moneda === 'USD') {
+            monto = parseFloat($('#abono-monto').val()) || 0;
+            montoBcv = monto;
+        } else {
+            monto = parseFloat($('#abono-monto-ves').val()) || 0;
+            montoBcv = parseFloat($('#abono-monto-bcv').val()) || 0;
+        }
+
+        var referencia = $('#abono-referencia').val().trim();
 
         if (!idTipoPago) {
             Swal.fire('Método requerido', 'Seleccione un método de pago.', 'warning');
@@ -979,15 +1044,12 @@ $(function () {
             return;
         }
 
-        var montoBcv;
         if (moneda === 'USD') {
-            montoBcv = monto;
             if (monto > deudaUsd + 0.01) {
                 Swal.fire('Monto excedido', 'El monto en USD no puede superar la deuda (' + formatoMoneda(deudaUsd, 'USD') + ').', 'warning');
                 return;
             }
         } else {
-            montoBcv = tasa > 0 ? monto / tasa : 0;
             var deudaVes = deudaBcv * tasa;
             if (monto > deudaVes + 1) {
                 Swal.fire('Monto excedido', 'El monto en VES no puede superar la deuda equivalente (' + formatoMoneda(deudaVes, 'VES') + ').', 'warning');
@@ -1068,6 +1130,8 @@ $(function () {
     // Limpiar modal de abono al cerrar
     document.getElementById('modal-abonar-credito').addEventListener('hidden.bs.modal', function () {
         $('#abono-monto').val('');
+        $('#abono-monto-ves').val('');
+        $('#abono-monto-bcv').val('');
         $('#abono-referencia').val('');
         $('input[name="abono-metodo"]').prop('checked', false);
         abonoModo = 'abonar';

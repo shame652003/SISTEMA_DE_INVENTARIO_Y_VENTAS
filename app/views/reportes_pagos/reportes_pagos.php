@@ -274,12 +274,6 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Método de Pago <span class="text-danger">*</span></label>
-                    <div class="btn-group flex-wrap w-100" role="group" id="abono-metodo-group">
-                    </div>
-                </div>
-
-                <div class="mb-3">
                     <label class="form-label">Moneda <span class="text-danger">*</span></label>
                     <div class="btn-group w-100" role="group" id="abono-moneda-group">
                         <input type="radio" class="btn-check" name="abono-moneda" id="abono-moneda-usd" value="USD" checked>
@@ -289,13 +283,39 @@
                     </div>
                 </div>
 
-                <div class="mb-3" id="abono-monto-container">
-                    <label for="abono-monto" class="form-label">Monto a Abonar <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        <span class="input-group-text" id="abono-simbolo">$</span>
-                        <input type="number" class="form-control" id="abono-monto" step="0.01" min="0.01" required placeholder="0.00">
+                <div class="mb-3">
+                    <label class="form-label">Método de Pago <span class="text-danger">*</span></label>
+                    <div class="btn-group flex-wrap w-100" role="group" id="abono-metodo-group">
                     </div>
-                    <small class="text-muted" id="abono-max-hint">Máximo disponible: $0.00</small>
+                </div>
+
+                <div class="mb-3" id="abono-monto-container">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-6" id="abono-monto-ves-col" style="display:none;">
+                            <label class="form-label">Monto VES <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">Bs.</span>
+                                <input type="number" class="form-control" id="abono-monto-ves" step="0.01" min="0.01" placeholder="0.00">
+                            </div>
+                            <small class="text-muted" id="abono-max-hint-ves">Máximo: Bs. 0,00</small>
+                        </div>
+                        <div class="col-md-6" id="abono-monto-bcv-col" style="display:none;">
+                            <label class="form-label">≈ BCV</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="abono-monto-bcv" step="0.01" min="0.01" placeholder="0.00">
+                            </div>
+                            <small class="text-muted" id="abono-max-hint-bcv">Máximo: $0.00</small>
+                        </div>
+                        <div class="col-md-6" id="abono-monto-usd-col">
+                            <label class="form-label">Monto USD <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="abono-monto" step="0.01" min="0.01" required placeholder="0.00">
+                            </div>
+                            <small class="text-muted" id="abono-max-hint">Máximo disponible: $0.00</small>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mb-3">
