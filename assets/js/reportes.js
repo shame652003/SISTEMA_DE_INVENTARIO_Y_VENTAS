@@ -12,12 +12,21 @@ $(function () {
     var abonoModo = 'abonar';
     var cedulaClienteExpandida = null;
     var descargandoPdf = false;
+    var mesSeleccionado = null;
 
     var modalVenta = new bootstrap.Modal(document.getElementById('modal-venta-detalle'));
     var modalAbono = new bootstrap.Modal(document.getElementById('modal-abonar-credito'));
 
     var meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
                  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+    function hoyLocal() {
+        var d = new Date();
+        var year = d.getFullYear();
+        var month = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return year + '-' + month + '-' + day;
+    }
 
     function formatoMoneda(valor, moneda) {
         var num = parseFloat(valor) || 0;
@@ -132,31 +141,63 @@ $(function () {
         modalVenta.show();
     }
 
+    var dtLangEs = {
+        processing: 'Procesando...',
+        search: 'Buscar:',
+        lengthMenu: 'Mostrar _MENU_ registros',
+        info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+        infoEmpty: 'Mostrando 0 a 0 de 0 registros',
+        infoFiltered: '(filtrado de _MAX_ registros totales)',
+        infoPostFix: '',
+        loadingRecords: 'Cargando...',
+        zeroRecords: 'No se encontraron registros',
+        emptyTable: 'No hay datos disponibles',
+        paginate: {
+            first: '<i class="bi bi-chevron-double-left"></i>',
+            last: '<i class="bi bi-chevron-double-right"></i>',
+            next: '<i class="bi bi-chevron-right"></i>',
+            previous: '<i class="bi bi-chevron-left"></i>'
+        },
+        aria: {
+            sortAscending: ': activar para ordenar ascendente',
+            sortDescending: ': activar para ordenar descendente'
+        }
+    };
+
+    var dtConfigBase = {
+        language: dtLangEs,
+        pageLength: 25,
+        responsive: true,
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'Todos']],
+        dom: '<"row mb-2 align-items-center"<"col-sm-6"l><"col-sm-6"f>>rt<"row mt-2 align-items-center"<"col-sm-5"i><"col-sm-7"p>>',
+        ordering: true
+    };
+
     // ============================================================
     // VALIDACION DE FECHAS
     // ============================================================
     function validarFechas() {
-        var hoy = new Date().toISOString().split('T')[0];
+        var hoy = hoyLocal();
         $('#fecha-inicio, #fecha-fin').attr('max', hoy);
     }
 
     $('#fecha-inicio, #fecha-fin').on('change', function () {
         var inicio = $('#fecha-inicio').val();
         var fin = $('#fecha-fin').val();
-        var hoy = new Date().toISOString().split('T')[0];
+        var hoy = hoyLocal();
 
         if (inicio && inicio > hoy) {
-            Swal.fire('Fecha no válida', 'La fecha de inicio no puede ser futura.', 'warning');
+            Swal.fire('Fecha no valida', 'La fecha de inicio no puede ser futura.', 'warning');
             $('#fecha-inicio').val(hoy);
             return;
         }
         if (fin && fin > hoy) {
-            Swal.fire('Fecha no válida', 'La fecha de fin no puede ser futura.', 'warning');
+            Swal.fire('Fecha no valida', 'La fecha de fin no puede ser futura.', 'warning');
             $('#fecha-fin').val(hoy);
             return;
         }
         if (inicio && fin && inicio > fin) {
-            Swal.fire('Rango inválido', 'La fecha de inicio no puede ser mayor que la fecha de fin.', 'warning');
+            Swal.fire('Rango invalido', 'La fecha de inicio no puede ser mayor que la fecha de fin.', 'warning');
             $('#fecha-inicio').val('');
             $('#fecha-fin').val('');
         }
@@ -166,7 +207,7 @@ $(function () {
     // SELECT2 - CLIENTES
     // ============================================================
     $('#select-cliente').select2({
-        placeholder: 'Buscar cliente por cédula o nombre...',
+        placeholder: 'Buscar cliente por cedula o nombre...',
         ajax: {
             url: window.BASE_URL + window.ROUTES.reportes_pagos_clientes_buscar,
             type: 'POST',
@@ -183,10 +224,108 @@ $(function () {
         minimumInputLength: 1,
         allowClear: true,
         language: {
-            inputTooShort: function () { return 'Escriba al menos 1 carácter para buscar'; },
+            inputTooShort: function () { return 'Escriba al menos 1 caracter para buscar'; },
             searching: function () { return 'Buscando...'; },
             noResults: function () { return 'No se encontraron clientes'; }
         }
+    });
+
+    // ============================================================
+    // SELECT2 - FECHAS DE VENTAS DEL MES ACTUAL
+    // ============================================================
+    $('#select-mes').select2({
+        placeholder: 'Seleccione una fecha...',
+        ajax: {
+            url: window.BASE_URL + window.ROUTES.reportes_pagos_fechas_ventas,
+            type: 'POST',
+            dataType: 'json',
+            delay: 200,
+            data: function () { return {}; },
+            processResults: function (data) {
+                return { results: data.results || [] };
+            },
+            cache: true
+        },
+        minimumInputLength: 0,
+        allowClear: false,
+        language: {
+            noResults: function () { return 'No hay fechas con ventas en el mes actual'; },
+            searching: function () { return 'Cargando fechas...'; }
+        }
+    });
+
+    $('#select-mes').on('select2:open', function () {
+        var $input = $('.select2-search__field');
+        $input.attr('placeholder', 'Buscar fecha...');
+    });
+
+    // Preseleccionar fecha de hoy en el Select2 cuando carguen los datos
+    $(document).on('select2:select', '#select-mes', function () {
+        $(this).removeClass('is-invalid');
+    });
+
+    // ============================================================
+    // BOTON TOGGLE - FILTROS AVANZADOS
+    // ============================================================
+    $('#btn-toggle-filtros').on('click', function () {
+        var $panel = $('#panel-filtros-avanzados');
+        var $icon = $(this).find('i');
+        if ($panel.hasClass('d-none')) {
+            $panel.removeClass('d-none').hide().slideDown(300);
+            $icon.addClass('bi-sliders2').removeClass('bi-sliders');
+            $(this).addClass('active');
+        } else {
+            $panel.slideUp(300, function () {
+                $panel.addClass('d-none');
+            });
+            $icon.addClass('bi-sliders').removeClass('bi-sliders2');
+            $(this).removeClass('active');
+        }
+    });
+
+    // ============================================================
+    // BOTON LIMPIAR FILTROS
+    // ============================================================
+    function limpiarFiltros() {
+        var hoy = hoyLocal();
+
+        if ($('#select-mes').find('option[value="' + hoy + '"]').length) {
+            $('#select-mes').val(hoy).trigger('change');
+        } else {
+            var $select = $('#select-mes');
+            var option = new Option(hoy, hoy, true, true);
+            $select.append(option).trigger('change');
+        }
+
+        $('#metodo-pago').val('');
+        $('#select-cliente').val('').trigger('change');
+        $('#fecha-inicio').val('');
+        $('#fecha-fin').val('');
+
+        $('#select-mes').removeClass('is-invalid');
+
+        var $panel = $('#panel-filtros-avanzados');
+        if (!$panel.hasClass('d-none')) {
+            $panel.slideUp(300, function () {
+                $panel.addClass('d-none');
+            });
+            var $icon = $('#btn-toggle-filtros').find('i');
+            $icon.addClass('bi-sliders').removeClass('bi-sliders2');
+            $('#btn-toggle-filtros').removeClass('active');
+        }
+
+        mesSeleccionado = hoy;
+
+        cargarHistorial({
+            fecha_inicio: hoy,
+            fecha_fin: hoy,
+            metodo_pago: '',
+            cedula_cliente: ''
+        });
+    }
+
+    $('#btn-limpiar-filtros').on('click', function () {
+        limpiarFiltros();
     });
 
     // ============================================================
@@ -254,16 +393,15 @@ $(function () {
                     $tablaHistorial.find('tbody').append(row);
                 }
 
-                dtHistorial = $tablaHistorial.DataTable({
+                dtHistorial = $tablaHistorial.DataTable($.extend({}, dtConfigBase, {
                     order: [[1, 'desc'], [0, 'desc']],
-                    pageLength: 25,
-                    responsive: true,
                     columnDefs: [
                         { orderable: false, targets: [3, 6] }
                     ]
-                });
+                }));
 
-                $('#contador-pagos').text(rows.length + ' ventas encontradas').show();
+                $('#contador-pagos').show();
+                $('#contador-num').text(rows.length);
                 $('#btn-pdf-historial').show();
             });
     }
@@ -271,24 +409,45 @@ $(function () {
     $('#form-reporte-pagos').on('submit', function (e) {
         e.preventDefault();
 
-        var inicio = $('#fecha-inicio').val();
-        var fin = $('#fecha-fin').val();
-        var hoy = new Date().toISOString().split('T')[0];
+        var fechaVal = $('#select-mes').val();
 
-        if (!inicio || !fin) {
-            Swal.fire('Fechas requeridas', 'Debe seleccionar ambas fechas.', 'warning');
+        if (!fechaVal) {
+            $('#select-mes').addClass('is-invalid');
+            Swal.fire('Fecha requerida', 'Debe seleccionar una fecha para generar el reporte.', 'warning');
             return;
         }
+        $('#select-mes').removeClass('is-invalid');
+
+        var inicio = fechaVal;
+        var fin = fechaVal;
+
+        var inicioCustom = $('#fecha-inicio').val();
+        var finCustom = $('#fecha-fin').val();
+        var usarCustom = !$('#panel-filtros-avanzados').hasClass('d-none') && inicioCustom && finCustom;
+
+        if (usarCustom) {
+            inicio = inicioCustom;
+            fin = finCustom;
+        }
+
+        var hoy = hoyLocal();
         if (inicio > hoy || fin > hoy) {
-            Swal.fire('Fecha no válida', 'No se pueden consultar fechas futuras.', 'warning');
+            Swal.fire('Fecha no valida', 'No se pueden consultar fechas futuras.', 'warning');
             return;
         }
         if (inicio > fin) {
-            Swal.fire('Rango inválido', 'La fecha de inicio no puede ser mayor que la fecha de fin.', 'warning');
+            Swal.fire('Rango invalido', 'La fecha de inicio no puede ser mayor que la fecha de fin.', 'warning');
             return;
         }
 
-        cargarHistorial($(this).serialize());
+        mesSeleccionado = fechaVal;
+
+        cargarHistorial({
+            fecha_inicio: inicio,
+            fecha_fin: fin,
+            metodo_pago: $('#metodo-pago').val(),
+            cedula_cliente: $('#select-cliente').val()
+        });
     });
 
     $tablaHistorial.on('click', 'tr.fila-pago', function () {
@@ -344,14 +503,12 @@ $(function () {
                     $tablaCreditos.find('tbody').append(row);
                 }
 
-                dtCreditos = $tablaCreditos.DataTable({
+                dtCreditos = $tablaCreditos.DataTable($.extend({}, dtConfigBase, {
                     order: [[3, 'desc']],
-                    pageLength: 25,
-                    responsive: true,
                     columnDefs: [
                         { orderable: false, targets: [5] }
                     ]
-                });
+                }));
                 $('#btn-pdf-creditos').show();
             });
     }
@@ -438,11 +595,9 @@ $(function () {
 
         $tablaPagosCliente.find('tbody').append(filaHtml);
 
-        dtPagosCliente = $tablaPagosCliente.DataTable({
-            order: [[1, 'desc'], [0, 'desc']],
-            pageLength: 25,
-            responsive: true
-        });
+        dtPagosCliente = $tablaPagosCliente.DataTable($.extend({}, dtConfigBase, {
+            order: [[1, 'desc'], [0, 'desc']]
+        }));
 
         $('html, body').animate({ scrollTop: $('#card-pagos-cliente').offset().top - 80 }, 400);
     }
@@ -772,9 +927,11 @@ $(function () {
                     cargarCreditos();
 
                     // Refrescar historial principal con filtros actuales
+                    var refFecha = mesSeleccionado || hoy;
+
                     cargarHistorial({
-                        fecha_inicio: $('#fecha-inicio').val(),
-                        fecha_fin: $('#fecha-fin').val(),
+                        fecha_inicio: refFecha,
+                        fecha_fin: refFecha,
                         metodo_pago: $('#metodo-pago').val(),
                         cedula_cliente: $('#select-cliente').val()
                     });
@@ -817,18 +974,21 @@ $(function () {
     });
 
     // ============================================================
-    // AUTO-CARGA: ventas del día actual
+    // AUTO-CARGA: ventas del dia actual
     // ============================================================
     validarFechas();
-    var hoy = new Date().toISOString().split('T')[0];
-    $('#fecha-inicio').val(hoy);
-    $('#fecha-fin').val(hoy);
+    var hoy = hoyLocal();
+    mesSeleccionado = hoy;
 
     cargarHistorial({
         fecha_inicio: hoy,
         fecha_fin: hoy,
         metodo_pago: '',
         cedula_cliente: ''
+    });
+
+    $('#select-mes').on('change', function () {
+        $(this).removeClass('is-invalid');
     });
 
     // ============================================================
@@ -917,9 +1077,21 @@ $(function () {
     }
 
     $('#btn-pdf-historial').on('click', function () {
+        var fechaRef = $('#select-mes').val() || mesSeleccionado || hoy;
+        var inicio = fechaRef;
+        var fin = fechaRef;
+
+        var inicioCustom = $('#fecha-inicio').val();
+        var finCustom = $('#fecha-fin').val();
+        var usarCustom = !$('#panel-filtros-avanzados').hasClass('d-none') && inicioCustom && finCustom;
+        if (usarCustom) {
+            inicio = inicioCustom;
+            fin = finCustom;
+        }
+
         var data = {
-            fecha_inicio: $('#fecha-inicio').val(),
-            fecha_fin: $('#fecha-fin').val(),
+            fecha_inicio: inicio,
+            fecha_fin: fin,
             metodo_pago: $('#metodo-pago').val(),
             cedula_cliente: $('#select-cliente').val()
         };

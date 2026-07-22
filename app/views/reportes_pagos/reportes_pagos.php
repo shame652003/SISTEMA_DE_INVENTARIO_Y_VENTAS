@@ -43,7 +43,7 @@
                 <div class="card-body">
                     <form id="form-reporte-pagos" novalidate>
                         <div class="row g-2 align-items-end">
-                            <div class="col-lg-5">
+                            <div class="col">
                                 <label for="select-mes" class="form-label small fw-semibold text-muted">Fecha de consulta <span class="text-danger">*</span></label>
                                 <select class="form-select" id="select-mes" name="mes" style="width: 100%;" required>
                                     <option value="">Seleccione una fecha...</option>
@@ -51,28 +51,26 @@
                                 <div class="invalid-feedback">Debe seleccionar una fecha para generar el reporte.</div>
                             </div>
                             <div class="col-auto">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-search me-1"></i> Generar Reporte
-                                </button>
-                            </div>
-                            <div class="col-auto">
-                                <button type="button" class="btn btn-outline-secondary" id="btn-limpiar-filtros" title="Restaurar consulta del dia">
-                                    <i class="bi bi-arrow-repeat me-1"></i> Limpiar
-                                </button>
-                            </div>
-                            <div class="col-auto">
-                                <button type="button" class="btn btn-outline-primary" id="btn-toggle-filtros" title="Filtros avanzados">
-                                    <i class="bi bi-sliders me-1"></i> Filtros
-                                </button>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary" title="Generar Reporte">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" id="btn-limpiar-filtros" title="Limpiar filtros">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" id="btn-toggle-filtros" title="Filtros avanzados">
+                                        <i class="bi bi-sliders"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         <div class="d-none mt-3" id="panel-filtros-avanzados">
                             <div class="bg-light rounded-3 p-3 border">
-                                <div class="row g-2 align-items-end">
+                                <div class="row g-3 align-items-end">
                                     <div class="col-md-3 col-sm-6">
-                                        <label for="metodo-pago" class="form-label small text-muted">Metodo de Pago</label>
-                                        <select class="form-select form-select-sm" id="metodo-pago" name="metodo_pago">
+                                        <label for="metodo-pago" class="form-label small text-muted"><i class="bi bi-credit-card me-1"></i>Metodo de Pago</label>
+                                        <select class="form-select" id="metodo-pago" name="metodo_pago">
                                             <option value="">Todos</option>
                                             <option value="Efectivo">Efectivo</option>
                                             <option value="Transferencia">Transferencia</option>
@@ -84,18 +82,18 @@
                                         </select>
                                     </div>
                                     <div class="col-md-3 col-sm-6">
-                                        <label for="select-cliente" class="form-label small text-muted">Cliente</label>
-                                        <select class="form-select form-select-sm" id="select-cliente" name="cedula_cliente" style="width: 100%;">
+                                        <label for="select-cliente" class="form-label small text-muted"><i class="bi bi-person me-1"></i>Cliente</label>
+                                        <select class="form-select" id="select-cliente" name="cedula_cliente" style="width: 100%;">
                                             <option value="">Todos los clientes</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-2 col-sm-4">
-                                        <label for="fecha-inicio" class="form-label small text-muted">Fecha Inicio</label>
-                                        <input type="date" class="form-control form-control-sm" id="fecha-inicio" name="fecha_inicio">
+                                    <div class="col-md-3 col-sm-6">
+                                        <label for="fecha-inicio" class="form-label small text-muted"><i class="bi bi-calendar3 me-1"></i>Fecha Inicio</label>
+                                        <input type="date" class="form-control" id="fecha-inicio" name="fecha_inicio">
                                     </div>
-                                    <div class="col-md-2 col-sm-4">
-                                        <label for="fecha-fin" class="form-label small text-muted">Fecha Fin</label>
-                                        <input type="date" class="form-control form-control-sm" id="fecha-fin" name="fecha_fin">
+                                    <div class="col-md-3 col-sm-6">
+                                        <label for="fecha-fin" class="form-label small text-muted"><i class="bi bi-calendar3 me-1"></i>Fecha Fin</label>
+                                        <input type="date" class="form-control" id="fecha-fin" name="fecha_fin">
                                     </div>
                                 </div>
                             </div>
@@ -104,17 +102,22 @@
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Detalle de Pagos</h5>
-                    <span class="badge bg-primary" id="contador-pagos" style="display:none;">0 pagos encontrados</span>
-                    <button class="btn btn-sm btn-pdf ms-2" id="btn-pdf-historial" title="Descargar PDF del historial" style="display:none;">
-                        <i class="bi bi-file-earmark-pdf"></i> PDF
-                    </button>
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-list-ul text-primary"></i>
+                        <h5 class="mb-0 fw-bold">Detalle de Pagos</h5>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small" id="contador-pagos" style="display:none;"><i class="bi bi-circle-fill text-primary me-1" style="font-size:0.4rem;vertical-align:middle;"></i><span id="contador-num">0</span> ventas encontradas</span>
+                        <button class="btn btn-sm btn-outline-danger" id="btn-pdf-historial" title="Descargar PDF del historial" style="display:none;">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" id="tabla-historial-pagos" style="width:100%">
+                        <table class="table table-hover table-striped align-middle mb-0" id="tabla-historial-pagos" style="width:100%">
                             <thead class="table-light">
                                 <tr>
                                     <th># Venta</th>
@@ -129,7 +132,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">Seleccione un rango de fechas y genere el reporte</td>
+                                    <td colspan="8" class="text-center text-muted py-4"><i class="bi bi-inbox fs-4 mb-2 d-block"></i>Seleccione una fecha y genere el reporte</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -139,19 +142,24 @@
         </div>
 
         <div class="tab-pane fade" id="panel-creditos" role="tabpanel">
-            <div class="card">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-people me-2"></i>Clientes con Créditos Pendientes</h5>
-                    <button class="btn btn-sm btn-outline-warning" id="btn-cargar-creditos">
-                        <i class="bi bi-arrow-repeat me-1"></i> Cargar Créditos
-                    </button>
-                    <button class="btn btn-sm btn-pdf ms-2" id="btn-pdf-creditos" title="Descargar PDF de créditos" style="display:none;">
-                        <i class="bi bi-file-earmark-pdf"></i> PDF
-                    </button>
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-people text-primary"></i>
+                        <h5 class="mb-0 fw-bold">Clientes con Créditos Pendientes</h5>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-warning" id="btn-cargar-creditos" title="Cargar Créditos">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" id="btn-pdf-creditos" title="Descargar PDF de créditos" style="display:none;">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" id="tabla-creditos" style="width:100%">
+                        <table class="table table-hover table-striped align-middle mb-0" id="tabla-creditos" style="width:100%">
                             <thead class="table-light">
                                 <tr>
                                     <th>Cédula</th>
@@ -164,7 +172,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">Presione "Cargar Créditos" para ver los clientes con deudas pendientes</td>
+                                    <td colspan="6" class="text-center text-muted py-4"><i class="bi bi-people fs-4 mb-2 d-block"></i>Presione cargar para ver créditos pendientes</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -172,22 +180,25 @@
                 </div>
             </div>
 
-            <div class="card mt-4 d-none" id="card-pagos-cliente">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div class="card mt-4 border-0 shadow-sm d-none" id="card-pagos-cliente">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historial de Pagos — <span id="nombre-cliente-credito" class="fw-bold"></span></h5>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-clock-history text-primary"></i>
+                            <h5 class="mb-0 fw-bold">Historial de Pagos — <span id="nombre-cliente-credito" class="fw-bold"></span></h5>
+                        </div>
                         <div class="mt-1" id="credito-saldo-actual" style="display:none;">
                             <span class="badge bg-warning text-dark me-2 fs-6" id="credito-badge-usd">USD: $0.00</span>
                             <span class="badge bg-secondary fs-6" id="credito-badge-bcv">BCV: $0.00</span>
                         </div>
                     </div>
-                    <button class="btn btn-sm btn-outline-secondary" id="btn-cerrar-cliente-detalle">
-                        <i class="bi bi-x-lg me-1"></i> Cerrar
+                    <button class="btn btn-sm btn-outline-secondary" id="btn-cerrar-cliente-detalle" title="Cerrar detalle">
+                        <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" id="tabla-pagos-cliente" style="width:100%">
+                        <table class="table table-hover table-striped align-middle mb-0" id="tabla-pagos-cliente" style="width:100%">
                             <thead class="table-light">
                                 <tr>
                                     <th># Venta</th>
@@ -201,7 +212,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted py-4">Sin pagos registrados</td>
+                                    <td colspan="7" class="text-center text-muted py-4"><i class="bi bi-inbox fs-4 mb-2 d-block"></i>Sin pagos registrados</td>
                                 </tr>
                             </tbody>
                         </table>

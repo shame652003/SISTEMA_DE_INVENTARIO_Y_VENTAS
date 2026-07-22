@@ -561,6 +561,48 @@ table.dataTable tbody td {
     color: #fff !important;
 }
 
+/* ─── DataTables Striped & Hover ─── */
+table.dataTable.table-striped>tbody>tr:nth-of-type(2n+1)>* {
+    box-shadow: inset 0 0 0 9999px rgba(248, 250, 252, 0.9) !important;
+}
+
+table.dataTable.table-hover>tbody>tr:hover>* {
+    box-shadow: inset 0 0 0 9999px rgba(224, 242, 254, 0.5) !important;
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+table.dataTable tbody td {
+    border-bottom: 1px solid #f1f5f9;
+    padding: 0.85rem 0.75rem;
+}
+
+table.dataTable thead th {
+    border-bottom: 2px solid #e2e8f0 !important;
+    font-weight: 700;
+    color: #475569;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 0.85rem 0.75rem;
+}
+
+/* ─── DataTables Pagination Icons ─── */
+.dataTables_wrapper .dataTables_paginate .paginate_button i {
+    font-size: 0.75rem;
+    vertical-align: middle;
+}
+
+/* ─── DataTables Info / Length alignment ─── */
+.dataTables_info {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.dataTables_length select {
+    font-size: 0.85rem;
+    padding: 0.3rem 2rem 0.3rem 0.6rem;
+}
+
 /* ─── Select2 Modern ─── */
 .select2-modern-wrapper {
     position: relative;
