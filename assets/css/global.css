@@ -797,3 +797,28 @@ table.dataTable thead th {
 .btn-pdf i {
     margin-right: 4px;
 }
+
+/* ─── Botones de filtro rápido ─── */
+.btn-filtro {
+    border-radius: 20px;
+    border: 1.5px solid #dee2e6;
+    background: #fff;
+    color: #555;
+    font-weight: 500;
+    padding: 5px 16px;
+    transition: all 0.2s;
+}
+.btn-filtro:hover {
+    border-color: #ea580c;
+    color: #ea580c;
+}
+.btn-filtro.active {
+    background: #ea580c;
+    color: #fff;
+    border-color: #ea580c;
+}
+
+/* ─── Colores de fondo por tipo de fila ─── */
+tr.fila-credito-pendiente td { background-color: #fff8f0 !important; }
+tr.fila-credito-pagado td { background-color: #f0fdf4 !important; }
+tr.fila-abono-historial td { background-color: #f0f4ff !important; }

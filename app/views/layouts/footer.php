@@ -113,6 +113,7 @@ $rutasPorModulo = [
         'reportes_pagos_pdf_historial'  => '/reportes/pagos/pdf/historial',
         'reportes_pagos_pdf_creditos'   => '/reportes/pagos/pdf/creditos',
         'reportes_pagos_pdf_venta'      => '/reportes/pagos/pdf/venta',
+        'reportes_pagos_abono_detalle'  => '/reportes/pagos/abono-detalle',
     ],
     'reportes_generales' => [
         'reportes_generales'        => '/reportes/generales',

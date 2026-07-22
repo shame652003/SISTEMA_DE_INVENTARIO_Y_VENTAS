@@ -26,11 +26,6 @@ class ReportePagoController extends Controller
         $metodo = trim($_POST['metodo_pago'] ?? '');
         $cedulaCliente = (int) ($_POST['cedula_cliente'] ?? 0);
 
-        if ($inicio === '' || $fin === '') {
-            $this->json(['ok' => false, 'mensaje' => 'Seleccione un rango de fechas.']);
-            return;
-        }
-
         $reporte = new Reporte();
         $pagos = $reporte->pagosDetalle($inicio, $fin, $metodo, $cedulaCliente);
         $this->json(['ok' => true, 'data' => $pagos ?: []]);
@@ -200,5 +195,25 @@ class ReportePagoController extends Controller
         }
 
         $this->json(['results' => $results]);
+    }
+
+    public function abonoDetalle(): void
+    {
+        if (!$this->verificarPermiso('reportes_pagos')) return;
+
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $this->json(['ok' => false, 'mensaje' => 'ID invalido.']);
+            return;
+        }
+
+        $reporte = new Reporte();
+        $data = $reporte->detalleAbono($id);
+
+        if (!$data['encontrado']) {
+            $this->json(['ok' => false, 'mensaje' => 'Abono no encontrado.']);
+            return;
+        }
+        $this->json(['ok' => true, 'data' => $data]);
     }
 }

@@ -316,71 +316,157 @@ class Reporte extends Model
 
     public function pagosDetalle(string $inicio, string $fin, string $metodo = '', int $cedulaCliente = 0): array
     {
-        $sql = "SELECT p.idVenta, v.fecha, v.hora,
-                       v.total_usd, v.total_ves, v.total_bcv,
-                       CONCAT(c.nombre, ' ', c.apellido) AS cliente, c.cedula AS cedula_cliente,
-                       CONCAT(u.nombre, ' ', u.apellido) AS vendedor,
-                       GROUP_CONCAT(DISTINCT tp.tipoPago ORDER BY tp.tipoPago SEPARATOR ', ') AS metodos_pago,
-                       GROUP_CONCAT(DISTINCT p.moneda ORDER BY p.moneda SEPARATOR ', ') AS monedas,
-                       COALESCE(
-                           (SELECT CASE WHEN cd.saldo_pendiente_bcv > 0 THEN 0 ELSE 1 END
-                            FROM creditos_detalle cd
-                            WHERE cd.idVenta = p.idVenta AND cd.status = 1
-                            LIMIT 1), NULL
-                       ) AS credito_pagado,
-                       COALESCE(
-                           (SELECT cd.saldo_pendiente_bcv
-                            FROM creditos_detalle cd
-                            WHERE cd.idVenta = p.idVenta AND cd.status = 1
-                            LIMIT 1), NULL
-                       ) AS credito_pendiente_bcv,
-                       COALESCE(
-                           (SELECT cd.monto_credito_usd
-                            FROM creditos_detalle cd
-                            WHERE cd.idVenta = p.idVenta AND cd.status = 1
-                            LIMIT 1), 0
-                       ) AS credito_monto_usd,
-                       COALESCE(
-                           (SELECT cd.monto_credito_bcv
-                            FROM creditos_detalle cd
-                            WHERE cd.idVenta = p.idVenta AND cd.status = 1
-                            LIMIT 1), 0
-                       ) AS credito_monto_bcv,
-                       COALESCE(
-                           (SELECT SUM(pg.monto_recibido)
-                            FROM pagos pg
-                            INNER JOIN tipo_de_pagos tp2 ON tp2.idtipo_de_pagos = pg.idtipo_de_pagos
-                            WHERE pg.idVenta = p.idVenta AND tp2.tipoPago = 'Credito' AND pg.moneda = 'VES'), 0
-                       ) AS credito_monto_ves
-                FROM pagos p
-                INNER JOIN ventas_encabezado v ON v.idVenta = p.idVenta AND v.status = 1
-                INNER JOIN cliente c ON c.cedula = v.cedula_cliente
-                INNER JOIN usuario u ON u.cedula = v.cedula_usuario
-                INNER JOIN tipo_de_pagos tp ON tp.idtipo_de_pagos = p.idtipo_de_pagos
-                WHERE DATE(p.fecha_pago) BETWEEN ? AND ?";
-        $params = [$inicio, $fin];
+        $params = [];
+        $where = '';
+        if ($inicio !== '' && $fin !== '') {
+            $where .= " AND DATE(p.fecha_pago) BETWEEN ? AND ?";
+            $params[] = $inicio;
+            $params[] = $fin;
+        }
 
+        $ventas = $this->fetchAll(
+            "SELECT 'venta' AS tipo_fila, p.idVenta, v.fecha, v.hora,
+                    v.total_usd, v.total_ves, v.total_bcv,
+                    CONCAT(c.nombre, ' ', c.apellido) AS cliente, c.cedula AS cedula_cliente,
+                    CONCAT(u.nombre, ' ', u.apellido) AS vendedor,
+                    GROUP_CONCAT(DISTINCT tp.tipoPago ORDER BY tp.tipoPago SEPARATOR ', ') AS metodos_pago,
+                    GROUP_CONCAT(DISTINCT p.moneda ORDER BY p.moneda SEPARATOR ', ') AS monedas,
+                    COALESCE(
+                        (SELECT CASE WHEN cd.saldo_pendiente_bcv > 0 THEN 0 ELSE 1 END
+                         FROM creditos_detalle cd
+                         WHERE cd.idVenta = p.idVenta AND cd.status = 1
+                         LIMIT 1), NULL
+                    ) AS credito_pagado,
+                    COALESCE(
+                        (SELECT cd.saldo_pendiente_bcv
+                         FROM creditos_detalle cd
+                         WHERE cd.idVenta = p.idVenta AND cd.status = 1
+                         LIMIT 1), NULL
+                    ) AS credito_pendiente_bcv,
+                    COALESCE(
+                        (SELECT cd.monto_credito_usd
+                         FROM creditos_detalle cd
+                         WHERE cd.idVenta = p.idVenta AND cd.status = 1
+                         LIMIT 1), 0
+                    ) AS credito_monto_usd,
+                    COALESCE(
+                        (SELECT cd.monto_credito_bcv
+                         FROM creditos_detalle cd
+                         WHERE cd.idVenta = p.idVenta AND cd.status = 1
+                         LIMIT 1), 0
+                    ) AS credito_monto_bcv,
+                    COALESCE(
+                        (SELECT SUM(pg.monto_recibido)
+                         FROM pagos pg
+                         INNER JOIN tipo_de_pagos tp2 ON tp2.idtipo_de_pagos = pg.idtipo_de_pagos
+                         WHERE pg.idVenta = p.idVenta AND tp2.tipoPago = 'Credito' AND pg.moneda = 'VES'), 0
+                    ) AS credito_monto_ves,
+                    NULL AS monto_recibido, NULL AS referencia
+             FROM pagos p
+             INNER JOIN ventas_encabezado v ON v.idVenta = p.idVenta AND v.status = 1
+             INNER JOIN cliente c ON c.cedula = v.cedula_cliente
+             INNER JOIN usuario u ON u.cedula = v.cedula_usuario
+             INNER JOIN tipo_de_pagos tp ON tp.idtipo_de_pagos = p.idtipo_de_pagos
+             WHERE 1=1" . $where . $this->buildFiltroVentas($metodo, $cedulaCliente, $params) . "
+             GROUP BY p.idVenta",
+            $params
+        ) ?: [];
+
+        $abonoParams = $params;
+        $abonoWhere = str_replace('p.fecha_pago', 'p2.fecha_pago', $where);
+        if ($metodo !== '') {
+            $abonoWhere .= " AND tp2.tipoPago = ?";
+            $abonoParams[] = $metodo;
+        }
+        if ($cedulaCliente > 0) {
+            $abonoWhere .= " AND p2.cedula_cliente = ?";
+            $abonoParams[] = $cedulaCliente;
+        }
+
+        $abonos = $this->fetchAll(
+            "SELECT 'abono' AS tipo_fila, p2.idPago AS idVenta, DATE(p2.fecha_pago) AS fecha, TIME(p2.fecha_pago) AS hora,
+                    0 AS total_usd, 0 AS total_ves, p2.monto_bcv AS total_bcv,
+                    CONCAT(c2.nombre, ' ', c2.apellido) AS cliente, c2.cedula AS cedula_cliente,
+                    'Sistema' AS vendedor,
+                    tp2.tipoPago AS metodos_pago, p2.moneda AS monedas,
+                    NULL AS credito_pagado, NULL AS credito_pendiente_bcv,
+                    0 AS credito_monto_usd, 0 AS credito_monto_bcv, 0 AS credito_monto_ves,
+                    p2.monto_recibido, p2.referencia
+             FROM pagos p2
+             INNER JOIN cliente c2 ON c2.cedula = p2.cedula_cliente
+             INNER JOIN tipo_de_pagos tp2 ON tp2.idtipo_de_pagos = p2.idtipo_de_pagos
+             WHERE p2.idVenta IS NULL" . $abonoWhere . "
+             ORDER BY p2.fecha_pago DESC, p2.idPago DESC",
+            $abonoParams
+        ) ?: [];
+
+        return array_merge($ventas, $abonos);
+    }
+
+    private function buildFiltroVentas(string $metodo, int $cedulaCliente, array &$params): string
+    {
+        $sql = '';
         if ($metodo !== '') {
             $sql .= " AND EXISTS (
-                SELECT 1 FROM pagos p2
-                INNER JOIN tipo_de_pagos tp2 ON tp2.idtipo_de_pagos = p2.idtipo_de_pagos
-                WHERE p2.idVenta = p.idVenta AND tp2.tipoPago = ?
+                SELECT 1 FROM pagos p3
+                INNER JOIN tipo_de_pagos tp3 ON tp3.idtipo_de_pagos = p3.idtipo_de_pagos
+                WHERE p3.idVenta = p.idVenta AND tp3.tipoPago = ?
             )";
             $params[] = $metodo;
         }
-
         if ($cedulaCliente > 0) {
             $sql .= " AND v.cedula_cliente = ?";
             $params[] = $cedulaCliente;
         }
-
-        $sql .= " GROUP BY p.idVenta ORDER BY v.fecha DESC, p.idVenta DESC";
-        return $this->fetchAll($sql, $params);
+        return $sql;
     }
 
     public function creditosPendientes(): array
     {
         return $this->fetchAll("SELECT * FROM vw_creditos_pendientes ORDER BY saldo_deudor_bcv DESC");
+    }
+
+    public function detalleAbono(int $idPago): array
+    {
+        $abono = $this->fetch(
+            "SELECT p.idPago, p.idtipo_de_pagos, p.moneda, p.monto_recibido, p.monto_bcv, p.referencia,
+                    DATE(p.fecha_pago) AS fecha, TIME(p.fecha_pago) AS hora,
+                    tp.tipoPago,
+                    CONCAT(c.nombre, ' ', c.apellido) AS cliente, c.cedula AS cedula_cliente
+             FROM pagos p
+             INNER JOIN cliente c ON c.cedula = p.cedula_cliente
+             INNER JOIN tipo_de_pagos tp ON tp.idtipo_de_pagos = p.idtipo_de_pagos
+             WHERE p.idPago = ? AND p.idVenta IS NULL",
+            [$idPago]
+        );
+
+        if (!$abono) return ['encontrado' => false];
+
+        $aplicados = $this->fetchAll(
+            "SELECT aa.monto_aplicado_usd, aa.monto_aplicado_bcv,
+                    cd.idCreditoDetalle, cd.idVenta, cd.monto_credito_usd, cd.monto_credito_bcv,
+                    cd.saldo_pendiente_usd, cd.saldo_pendiente_bcv, cd.fecha_creacion,
+                    v.fecha AS fecha_venta,
+                    CONCAT(cl.nombre, ' ', cl.apellido) AS cliente_venta
+             FROM abonos_aplicados aa
+             INNER JOIN creditos_detalle cd ON cd.idCreditoDetalle = aa.idCreditoDetalle
+             INNER JOIN ventas_encabezado v ON v.idVenta = cd.idVenta
+             INNER JOIN cliente cl ON cl.cedula = cd.cedula_cliente
+             WHERE aa.idPago = ?
+             ORDER BY aa.idAbonoAplicado ASC",
+            [$idPago]
+        );
+
+        $tasa = $this->fetch(
+            "SELECT tasa_ves_por_usd FROM bcv_tasas WHERE status = 1 ORDER BY fecha_tasa DESC, idTasa DESC LIMIT 1"
+        );
+
+        return [
+            'encontrado' => true,
+            'abono' => $abono,
+            'aplicados' => $aplicados ?: [],
+            'tasa_bcv' => $tasa ? (float) $tasa['tasa_ves_por_usd'] : 0,
+        ];
     }
 
     public function fechasVentasDelMes(): array

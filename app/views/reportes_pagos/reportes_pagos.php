@@ -44,11 +44,10 @@
                     <form id="form-reporte-pagos" novalidate>
                         <div class="row g-2 align-items-end">
                             <div class="col">
-                                <label for="select-mes" class="form-label small fw-semibold text-muted">Fecha de consulta <span class="text-danger">*</span></label>
-                                <select class="form-select" id="select-mes" name="mes" style="width: 100%;" required>
-                                    <option value="">Seleccione una fecha...</option>
+                                <label for="select-mes" class="form-label small fw-semibold text-muted">Fecha de consulta</label>
+                                <select class="form-select" id="select-mes" name="mes" style="width: 100%;">
+                                    <option value="">Todas las fechas</option>
                                 </select>
-                                <div class="invalid-feedback">Debe seleccionar una fecha para generar el reporte.</div>
                             </div>
                             <div class="col-auto">
                                 <div class="d-flex gap-2">
@@ -100,6 +99,21 @@
                         </div>
                     </form>
                 </div>
+            </div>
+
+            <div class="d-flex gap-2 mb-3 flex-wrap" id="filtros-rapidos">
+                <button type="button" class="btn btn-sm btn-filtro active" data-filtro="todas">
+                    <i class="bi bi-grid-fill me-1"></i> Todas las ventas
+                </button>
+                <button type="button" class="btn btn-sm btn-filtro btn-finalizadas" data-filtro="finalizadas">
+                    <i class="bi bi-check-circle-fill me-1"></i> Solo Finalizadas
+                </button>
+                <button type="button" class="btn btn-sm btn-filtro btn-creditos" data-filtro="creditos">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Solo Créditos
+                </button>
+                <button type="button" class="btn btn-sm btn-filtro btn-abonos" data-filtro="abonos">
+                    <i class="bi bi-arrow-repeat me-1"></i> Solo Abonos
+                </button>
             </div>
 
             <div class="card border-0 shadow-sm">
@@ -386,6 +400,54 @@
                 <button type="button" class="btn btn-pdf me-auto" id="btn-pdf-venta" title="Descargar PDF de esta venta">
                     <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
                 </button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-abono-detalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="bi bi-arrow-repeat me-2"></i>Detalle de Abono #<span id="modal-abono-id">-</span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Cliente</small>
+                        <strong id="modal-abono-cliente">-</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Fecha</small>
+                        <strong id="modal-abono-fecha">-</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Monto</small>
+                        <strong id="modal-abono-monto">-</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Referencia</small>
+                        <strong id="modal-abono-ref">-</strong>
+                    </div>
+                </div>
+                <h6 class="fw-bold mb-3">Aplicado a las siguientes ventas (FIFO)</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle mb-0" id="tabla-modal-abono-aplicados">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Venta</th>
+                                <th>Fecha Venta</th>
+                                <th class="text-end">Monto Aplicado BCV</th>
+                                <th class="text-end">Monto Aplicado VES</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>

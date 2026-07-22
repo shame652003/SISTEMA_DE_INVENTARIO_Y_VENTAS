@@ -16,6 +16,7 @@ $(function () {
 
     var modalVenta = new bootstrap.Modal(document.getElementById('modal-venta-detalle'));
     var modalAbono = new bootstrap.Modal(document.getElementById('modal-abonar-credito'));
+    var modalAbonoDetalle = new bootstrap.Modal(document.getElementById('modal-abono-detalle'));
 
     var meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
                  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -288,14 +289,7 @@ $(function () {
     // ============================================================
     function limpiarFiltros() {
         var hoy = hoyLocal();
-
-        if ($('#select-mes').find('option[value="' + hoy + '"]').length) {
-            $('#select-mes').val(hoy).trigger('change');
-        } else {
-            var $select = $('#select-mes');
-            var option = new Option(hoy, hoy, true, true);
-            $select.append(option).trigger('change');
-        }
+        $('#select-mes').val(hoy).trigger('change');
 
         $('#metodo-pago').val('');
         $('#select-cliente').val('').trigger('change');
@@ -314,14 +308,16 @@ $(function () {
             $('#btn-toggle-filtros').removeClass('active');
         }
 
-        mesSeleccionado = hoy;
-
         cargarHistorial({
             fecha_inicio: hoy,
             fecha_fin: hoy,
             metodo_pago: '',
             cedula_cliente: ''
         });
+
+        filtroActivo = 'todas';
+        $('#filtros-rapidos .btn-filtro').removeClass('active');
+        $('#filtros-rapidos .btn-filtro[data-filtro="todas"]').addClass('active');
     }
 
     $('#btn-limpiar-filtros').on('click', function () {
@@ -339,6 +335,7 @@ $(function () {
                 var rows = res.data || [];
 
                 if (dtHistorial) {
+                    $.fn.dataTable.ext.search.pop();
                     dtHistorial.destroy();
                     dtHistorial = null;
                 }
@@ -354,6 +351,30 @@ $(function () {
 
                 for (var i = 0; i < rows.length; i++) {
                     var p = rows[i];
+                    var esAbono = p.tipo_fila === 'abono';
+
+                    if (esAbono) {
+                        var monedaAbono = p.monedas || 'USD';
+                        var esAbonoVes = monedaAbono === 'VES';
+                        var totalVesAbono = esAbonoVes ? parseFloat(p.credito_monto_ves || p.monto_recibido) : 0;
+                        var totalVesAbonoCol = esAbonoVes
+                            ? 'Bs. ' + totalVesAbono.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                            : '<span class="text-muted">—</span>';
+
+                        var row = '<tr class="fila-abono-historial fila-abono-click" data-idabono="' + p.idVenta + '" style="cursor:pointer;">' +
+                            '<td><span class="badge bg-info">Abono a credito</span></td>' +
+                            '<td>' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
+                            '<td>' + p.cliente + ' <small class="text-muted">(' + p.cedula_cliente + ')</small></td>' +
+                            '<td>' + badgeTipoPago(p.metodos_pago) + '</td>' +
+                            '<td class="text-end fw-bold" data-sort="' + parseFloat(p.total_bcv) + '">' + formatoMoneda(p.total_bcv, 'USD') + '</td>' +
+                            '<td class="text-end fw-bold" data-sort="' + totalVesAbono.toFixed(2) + '">' + totalVesAbonoCol + '</td>' +
+                            '<td>' + (p.referencia || '<span class="text-muted">—</span>') + '</td>' +
+                            '<td><small class="text-muted">' + p.vendedor + '</small></td>' +
+                            '</tr>';
+                        $tablaHistorial.find('tbody').append(row);
+                        continue;
+                    }
+
                     var creditoVes = parseFloat(p.credito_monto_ves) || 0;
                     var monedasStr = p.monedas || '';
                     var esVes = monedasStr.indexOf('VES') !== -1;
@@ -380,7 +401,11 @@ $(function () {
                         totalVesCol = 'Bs. ' + totalVes.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     }
 
-                    var row = '<tr class="fila-pago" data-idventa="' + p.idVenta + '" style="cursor:pointer;">' +
+                    var claseAdicional = '';
+                    if (p.credito_pagado === 0) claseAdicional = ' fila-credito-pendiente';
+                    else if (p.credito_pagado === 1) claseAdicional = ' fila-credito-pagado';
+
+                    var row = '<tr class="fila-pago' + claseAdicional + '" data-idventa="' + p.idVenta + '" style="cursor:pointer;">' +
                         '<td><span class="fw-bold">#' + p.idVenta + '</span></td>' +
                         '<td>' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
                         '<td>' + p.cliente + ' <small class="text-muted">(' + p.cedula_cliente + ')</small></td>' +
@@ -400,23 +425,47 @@ $(function () {
                     ]
                 }));
 
-                $('#contador-pagos').show();
                 $('#contador-num').text(rows.length);
+                $('#contador-pagos').show();
                 $('#btn-pdf-historial').show();
+
+                aplicarFiltroRapido();
             });
     }
+
+    // ============================================================
+    // FILTROS RAPIDOS
+    // ============================================================
+    var filtroActivo = 'todas';
+
+    function aplicarFiltroRapido() {
+        if (!dtHistorial) return;
+        $.fn.dataTable.ext.search.pop();
+        $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+            if (!dtHistorial) return true;
+            var row = dtHistorial.row(dataIndex).node();
+            if (!row) return true;
+
+            if (filtroActivo === 'todas') return true;
+            if (filtroActivo === 'abonos') return $(row).hasClass('fila-abono-historial');
+            if (filtroActivo === 'creditos') return $(row).hasClass('fila-credito-pendiente') || $(row).hasClass('fila-credito-pagado');
+            if (filtroActivo === 'finalizadas') return !$(row).hasClass('fila-credito-pendiente') && !$(row).hasClass('fila-abono-historial');
+            return true;
+        });
+        if (dtHistorial) dtHistorial.draw();
+    }
+
+    $('#filtros-rapidos').on('click', '.btn-filtro', function () {
+        filtroActivo = $(this).data('filtro');
+        $('#filtros-rapidos .btn-filtro').removeClass('active');
+        $(this).addClass('active');
+        aplicarFiltroRapido();
+    });
 
     $('#form-reporte-pagos').on('submit', function (e) {
         e.preventDefault();
 
-        var fechaVal = $('#select-mes').val();
-
-        if (!fechaVal) {
-            $('#select-mes').addClass('is-invalid');
-            Swal.fire('Fecha requerida', 'Debe seleccionar una fecha para generar el reporte.', 'warning');
-            return;
-        }
-        $('#select-mes').removeClass('is-invalid');
+        var fechaVal = $('#select-mes').val() || '';
 
         var inicio = fechaVal;
         var fin = fechaVal;
@@ -431,16 +480,16 @@ $(function () {
         }
 
         var hoy = hoyLocal();
-        if (inicio > hoy || fin > hoy) {
+        if (inicio && (inicio > hoy || (fin && fin > hoy))) {
             Swal.fire('Fecha no valida', 'No se pueden consultar fechas futuras.', 'warning');
             return;
         }
-        if (inicio > fin) {
+        if (inicio && fin && inicio > fin) {
             Swal.fire('Rango invalido', 'La fecha de inicio no puede ser mayor que la fecha de fin.', 'warning');
             return;
         }
 
-        mesSeleccionado = fechaVal;
+        mesSeleccionado = fechaVal || null;
 
         cargarHistorial({
             fecha_inicio: inicio,
@@ -448,6 +497,57 @@ $(function () {
             metodo_pago: $('#metodo-pago').val(),
             cedula_cliente: $('#select-cliente').val()
         });
+    });
+
+    $tablaHistorial.on('click', 'tr.fila-abono-click', function () {
+        var idAbono = $(this).data('idabono');
+        if (!idAbono) return;
+
+        Ajax.post(window.ROUTES.reportes_pagos_abono_detalle, { id: idAbono })
+            .done(function (res) {
+                if (!res.ok) return;
+                var d = res.data;
+                var a = d.abono;
+                var esAbonoUsd = a.moneda === 'USD';
+
+                $('#modal-abono-id').text(a.idPago);
+                $('#modal-abono-cliente').text(a.cliente + ' (C.I. ' + a.cedula_cliente + ')');
+                $('#modal-abono-fecha').text(formatoFecha(a.fecha) + ' ' + formatoHora(a.hora));
+                $('#modal-abono-monto').text(esAbonoUsd ? formatoMoneda(a.monto_recibido, 'USD') + ' USD' : formatoMoneda(a.monto_bcv, 'USD'));
+                $('#modal-abono-ref').text(a.referencia || '—');
+
+                var tbody = $('#tabla-modal-abono-aplicados tbody').empty();
+                var $thead = $('#tabla-modal-abono-aplicados thead');
+                if (esAbonoUsd) {
+                    $thead.find('th:last').text('Monto Aplicado USD');
+                } else {
+                    $thead.find('th:last').text('Monto Aplicado VES');
+                }
+
+                var tasaBcv = parseFloat(d.tasa_bcv) || 0;
+                if (d.aplicados && d.aplicados.length > 0) {
+                    for (var i = 0; i < d.aplicados.length; i++) {
+                        var ap = d.aplicados[i];
+                        var montoVes = tasaBcv > 0 ? parseFloat(ap.monto_aplicado_bcv) * tasaBcv : 0;
+                        var colFinal = esAbonoUsd
+                            ? '<td class="text-end">' + formatoMoneda(ap.monto_aplicado_usd, 'USD') + '</td>'
+                            : '<td class="text-end">' + formatoMoneda(montoVes, 'VES') + '</td>';
+                        tbody.append(
+                            '<tr>' +
+                            '<td><span class="fw-bold">Venta #' + ap.idVenta + '</span> ' +
+                            '<small class="text-muted">' + ap.cliente_venta + '</small></td>' +
+                            '<td>' + formatoFecha(ap.fecha_venta) + '</td>' +
+                            '<td class="text-end">' + formatoMoneda(ap.monto_aplicado_bcv, 'USD') + '</td>' +
+                            colFinal +
+                            '</tr>'
+                        );
+                    }
+                } else {
+                    tbody.append('<tr><td colspan="4" class="text-center text-muted">Sin detalle</td></tr>');
+                }
+
+                modalAbonoDetalle.show();
+            });
     });
 
     $tablaHistorial.on('click', 'tr.fila-pago', function () {
@@ -1077,7 +1177,7 @@ $(function () {
     }
 
     $('#btn-pdf-historial').on('click', function () {
-        var fechaRef = $('#select-mes').val() || mesSeleccionado || hoy;
+        var fechaRef = $('#select-mes').val() || '';
         var inicio = fechaRef;
         var fin = fechaRef;
 

@@ -13,8 +13,8 @@ class ReportePdfController extends Controller
     {
         if (!$this->verificarPermiso('reportes_pagos')) return;
 
-        $inicio = trim($_POST['fecha_inicio'] ?? date('Y-m-d'));
-        $fin = trim($_POST['fecha_fin'] ?? date('Y-m-d'));
+        $inicio = trim($_POST['fecha_inicio'] ?? '');
+        $fin = trim($_POST['fecha_fin'] ?? '');
         $metodo = trim($_POST['metodo_pago'] ?? '');
         $cedulaCliente = (int) ($_POST['cedula_cliente'] ?? 0);
 
@@ -25,9 +25,12 @@ class ReportePdfController extends Controller
         if ($metodo !== '') $filtros[] = 'Metodo: ' . $metodo;
         if ($cedulaCliente > 0) $filtros[] = 'Cliente: #' . $cedulaCliente;
 
-        $nombreArchivo = 'historial_pagos_' . $this->fechaArchivo($inicio);
-        if ($inicio !== $fin) {
-            $nombreArchivo .= '_al_' . $this->fechaArchivo($fin);
+        $nombreArchivo = 'historial_pagos';
+        if ($inicio !== '') {
+            $nombreArchivo .= '_' . $this->fechaArchivo($inicio);
+            if ($inicio !== $fin) {
+                $nombreArchivo .= '_al_' . $this->fechaArchivo($fin);
+            }
         }
         if ($metodo !== '') $nombreArchivo .= '_' . str_replace(' ', '_', $metodo);
         if ($cedulaCliente > 0) $nombreArchivo .= '_cliente_' . $cedulaCliente;
@@ -200,10 +203,19 @@ class ReportePdfController extends Controller
             $generalRow = '<div class="summary" style="margin-bottom:12px;">Total General (cobrado + pendiente):<br>' . implode('<br>', $generalHtml) . '</div>';
         }
 
+        $fechaHeader = 'Todas las fechas';
+        if ($inicio !== '') {
+            $fechaHeader = $this->fechaEs($inicio);
+            if ($fin !== '' && $inicio !== $fin) {
+                $fechaHeader .= ' - ' . $this->fechaEs($fin);
+            }
+        }
+        $fechaHeader .= $filtrosStr;
+
         return '<!DOCTYPE html><html><head><meta charset="utf-8">' . $css . '</head><body>
             <div class="header">
                 <h1>Historial de Pagos</h1>
-                <p>' . $this->fechaEs($inicio) . ' - ' . $this->fechaEs($fin) . $filtrosStr . '</p>
+                <p>' . $fechaHeader . '</p>
             </div>
             <div class="info-row">' . $infoExtra . '</div>
             ' . $pendienteRow . '
