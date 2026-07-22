@@ -109,6 +109,7 @@ $rutasPorModulo = [
         'reportes_pagos_saldo_credito'   => '/reportes/pagos/saldo-credito',
         'reportes_pagos_abonar_credito'  => '/reportes/pagos/abonar-credito',
         'reportes_pagos_creditos_detalle' => '/reportes/pagos/creditos-detalle',
+        'reportes_pagos_fechas_ventas'   => '/reportes/pagos/fechas-ventas',
         'reportes_pagos_pdf_historial'  => '/reportes/pagos/pdf/historial',
         'reportes_pagos_pdf_creditos'   => '/reportes/pagos/pdf/creditos',
         'reportes_pagos_pdf_venta'      => '/reportes/pagos/pdf/venta',

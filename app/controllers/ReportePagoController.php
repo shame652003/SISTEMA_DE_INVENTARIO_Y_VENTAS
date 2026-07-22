@@ -175,4 +175,30 @@ class ReportePagoController extends Controller
 
         $this->json($resultado);
     }
+
+    public function fechasVentasDelMes(): void
+    {
+        if (!$this->verificarPermiso('reportes_pagos')) return;
+
+        $reporte = new Reporte();
+        $fechas = $reporte->fechasVentasDelMes();
+
+        $nombres = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                     'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+        $results = [];
+        foreach ($fechas as $f) {
+            $partes = explode('-', $f['fecha']);
+            $dia = (int)$partes[2];
+            $mes = (int)$partes[1];
+            $anio = $partes[0];
+            $nombre = $dia . ' de ' . $nombres[$mes] . ' de ' . $anio;
+            $results[] = [
+                'id' => $f['fecha'],
+                'text' => $nombre
+            ];
+        }
+
+        $this->json(['results' => $results]);
+    }
 }

@@ -35,40 +35,70 @@
 
     <div class="tab-content" id="reportesTabsContent">
         <div class="tab-pane fade show active" id="panel-historial" role="tabpanel">
-            <div class="card mb-4">
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom d-flex align-items-center gap-2">
+                    <i class="bi bi-funnel-fill text-primary"></i>
+                    <h6 class="mb-0 fw-bold">Filtros de Busqueda</h6>
+                </div>
                 <div class="card-body">
-                    <form id="form-reporte-pagos" class="row g-2 align-items-end">
-                        <div class="col-md-3">
-                            <label for="fecha-inicio" class="form-label">Fecha Inicio</label>
-                            <input type="date" class="form-control" id="fecha-inicio" name="fecha_inicio" required max="<?= date('Y-m-d') ?>">
+                    <form id="form-reporte-pagos" novalidate>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-lg-5">
+                                <label for="select-mes" class="form-label small fw-semibold text-muted">Fecha de consulta <span class="text-danger">*</span></label>
+                                <select class="form-select" id="select-mes" name="mes" style="width: 100%;" required>
+                                    <option value="">Seleccione una fecha...</option>
+                                </select>
+                                <div class="invalid-feedback">Debe seleccionar una fecha para generar el reporte.</div>
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search me-1"></i> Generar Reporte
+                                </button>
+                            </div>
+                            <div class="col-auto">
+                                <button type="button" class="btn btn-outline-secondary" id="btn-limpiar-filtros" title="Restaurar consulta del dia">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Limpiar
+                                </button>
+                            </div>
+                            <div class="col-auto">
+                                <button type="button" class="btn btn-outline-primary" id="btn-toggle-filtros" title="Filtros avanzados">
+                                    <i class="bi bi-sliders me-1"></i> Filtros
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <label for="fecha-fin" class="form-label">Fecha Fin</label>
-                            <input type="date" class="form-control" id="fecha-fin" name="fecha_fin" required max="<?= date('Y-m-d') ?>">
-                        </div>
-                        <div class="col-md-2">
-                            <label for="metodo-pago" class="form-label">Método de Pago</label>
-                            <select class="form-select" id="metodo-pago" name="metodo_pago">
-                                <option value="">Todos</option>
-                                <option value="Efectivo">Efectivo</option>
-                                <option value="Transferencia">Transferencia</option>
-                                <option value="Punto">Punto</option>
-                                <option value="Biopago">Biopago</option>
-                                <option value="Credito">Crédito</option>
-                                <option value="Zelle">Zelle</option>
-                                <option value="Binance USDT">Binance USDT</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label for="select-cliente" class="form-label">Cliente</label>
-                            <select class="form-select" id="select-cliente" name="cedula_cliente" style="width: 100%;">
-                                <option value="">Todos los clientes</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-search me-1"></i> Generar Reporte
-                            </button>
+
+                        <div class="d-none mt-3" id="panel-filtros-avanzados">
+                            <div class="bg-light rounded-3 p-3 border">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-3 col-sm-6">
+                                        <label for="metodo-pago" class="form-label small text-muted">Metodo de Pago</label>
+                                        <select class="form-select form-select-sm" id="metodo-pago" name="metodo_pago">
+                                            <option value="">Todos</option>
+                                            <option value="Efectivo">Efectivo</option>
+                                            <option value="Transferencia">Transferencia</option>
+                                            <option value="Punto">Punto</option>
+                                            <option value="Biopago">Biopago</option>
+                                            <option value="Credito">Credito</option>
+                                            <option value="Zelle">Zelle</option>
+                                            <option value="Binance USDT">Binance USDT</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6">
+                                        <label for="select-cliente" class="form-label small text-muted">Cliente</label>
+                                        <select class="form-select form-select-sm" id="select-cliente" name="cedula_cliente" style="width: 100%;">
+                                            <option value="">Todos los clientes</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2 col-sm-4">
+                                        <label for="fecha-inicio" class="form-label small text-muted">Fecha Inicio</label>
+                                        <input type="date" class="form-control form-control-sm" id="fecha-inicio" name="fecha_inicio">
+                                    </div>
+                                    <div class="col-md-2 col-sm-4">
+                                        <label for="fecha-fin" class="form-label small text-muted">Fecha Fin</label>
+                                        <input type="date" class="form-control form-control-sm" id="fecha-fin" name="fecha_fin">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>

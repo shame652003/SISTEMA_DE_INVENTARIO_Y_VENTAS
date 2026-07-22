@@ -2,8 +2,6 @@
 
 namespace App\Controllers;
 
-date_default_timezone_set('America/Caracas');
-
 use App\Core\Controller;
 use App\Core\PdfGenerator;
 use App\Models\Reporte;

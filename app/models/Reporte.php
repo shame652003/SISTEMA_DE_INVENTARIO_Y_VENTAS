@@ -383,6 +383,18 @@ class Reporte extends Model
         return $this->fetchAll("SELECT * FROM vw_creditos_pendientes ORDER BY saldo_deudor_bcv DESC");
     }
 
+    public function fechasVentasDelMes(): array
+    {
+        return $this->fetchAll(
+            "SELECT DISTINCT fecha
+             FROM ventas_encabezado
+             WHERE status = 1
+               AND YEAR(fecha) = YEAR(CURRENT_DATE)
+               AND MONTH(fecha) = MONTH(CURRENT_DATE)
+             ORDER BY fecha DESC"
+        );
+    }
+
     public function pagosPorCliente(int $cedula): array
     {
         $ventas = $this->fetchAll(
