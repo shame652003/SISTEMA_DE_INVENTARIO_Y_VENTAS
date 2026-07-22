@@ -18,6 +18,52 @@ class Producto extends Model
         );
     }
 
+    public function obtenerTodosPaginado(int $start, int $length, string $search, string $orderBy, string $orderDir): array
+    {
+        $orderDir = strtoupper($orderDir) === 'DESC' ? 'DESC' : 'ASC';
+        $allowed = ['codigo', 'nombre', 'tipo_producto', 'marca'];
+        $orderBy = in_array($orderBy, $allowed) ? $orderBy : 'codigo';
+
+        $sql = "SELECT p.idproducto, p.codigo, p.nombre, p.marca, p.imgproducto,
+                       tp.tipo AS tipo_producto
+                FROM {$this->table} p
+                INNER JOIN tipo_productos tp ON tp.idTipoA = p.idTipoA
+                WHERE p.status = 1";
+
+        $params = [];
+        if ($search !== '') {
+            $sql .= " AND (p.codigo LIKE ? OR p.nombre LIKE ? OR p.marca LIKE ?)";
+            $s = '%' . $search . '%';
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
+        }
+
+        $sql .= " ORDER BY p.{$orderBy} {$orderDir}";
+        if ($length > 0) {
+            $sql .= " LIMIT {$start}, {$length}";
+        }
+
+        return $this->fetchAll($sql, $params);
+    }
+
+    public function contarProductos(string $search): int
+    {
+        $sql = "SELECT COUNT(*) AS total FROM {$this->table} p WHERE p.status = 1";
+        $params = [];
+
+        if ($search !== '') {
+            $sql .= " AND (p.codigo LIKE ? OR p.nombre LIKE ? OR p.marca LIKE ?)";
+            $s = '%' . $search . '%';
+            $params[] = $s;
+            $params[] = $s;
+            $params[] = $s;
+        }
+
+        $row = $this->fetch($sql, $params);
+        return (int) ($row['total'] ?? 0);
+    }
+
     public function obtenerPorId(int $id): ?array
     {
         return $this->fetch(

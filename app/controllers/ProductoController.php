@@ -28,9 +28,31 @@ class ProductoController extends Controller
     public function listar(): void
     {
         if (!$this->verificarPermiso('productos')) return;
+
+        $draw    = (int) ($_POST['draw'] ?? 1);
+        $start   = max(0, (int) ($_POST['start'] ?? 0));
+        $length  = (int) ($_POST['length'] ?? 10);
+        if ($length < 1 && $length !== -1) {
+            $length = 10;
+        }
+        $search  = $_POST['search']['value'] ?? '';
+
+        $colMap  = ['', 'codigo', 'nombre', 'tipo_producto', 'marca'];
+        $colIdx  = (int) ($_POST['order'][0]['column'] ?? 1);
+        $orderBy = $colMap[$colIdx] ?? 'codigo';
+        $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'ASC');
+
         $producto = new Producto();
-        $productos = $producto->obtenerTodos();
-        $this->json(['data' => $productos ?: []]);
+        $data = $producto->obtenerTodosPaginado($start, $length, $search, $orderBy, $orderDir);
+        $totalFiltrado = $producto->contarProductos($search);
+        $totalSinFiltro = $producto->contarProductos('');
+
+        $this->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $totalSinFiltro,
+            'recordsFiltered' => $totalFiltrado,
+            'data'            => $data ?: [],
+        ]);
     }
 
     public function obtener(): void

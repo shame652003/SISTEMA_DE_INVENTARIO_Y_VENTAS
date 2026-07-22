@@ -7,6 +7,7 @@ $(function () {
     const modalListaProductos = new bootstrap.Modal('#modal-lista-productos');
     const modalTipoProducto = new bootstrap.Modal('#modal-tipo-producto');
     let tablaProductos = null;
+    let eliminandoProducto = false;
 
     /* ===== Helpers ===== */
 
@@ -107,66 +108,82 @@ $(function () {
                 const valorActual = $select.val();
                 $select.html('<option value=""></option>');
                 (res.data || []).forEach(function (t) {
-                    $select.append(`<option value="${t.idTipoA}">${t.tipo}</option>`);
+                    $select.append('<option value="' + t.idTipoA + '">' + t.tipo + '</option>');
                 });
                 if (valorActual) $select.val(valorActual);
             });
     }
 
-    /* ===== DataTable Productos ===== */
+    /* ===== DataTable Productos Server-Side ===== */
 
-    function cargarProductos() {
-        Ajax.post(window.ROUTES.productos_listar)
-            .done(function (res) {
-                const data = res.data || [];
-                const rows = data.map(function (p) {
-                    const img = p.imgproducto
-                        ? `<img src="${window.BASE_URL}/${p.imgproducto}" class="rounded" style="width:50px;height:50px;object-fit:cover;" onerror="this.onerror=null;this.src='${window.BASE_URL}/assets/img/placeholder-product.svg';">`
-                        : `<span class="badge bg-secondary">Sin imagen</span>`;
-                    return [
-                        img,
-                        p.codigo,
-                        p.nombre,
-                        p.tipo_producto || '-',
-                        p.marca || '-',
-                        `<div class="d-flex justify-content-center gap-2">
-                            <button class="btn btn-sm btn-warning btn-editar" data-id="${p.idproducto}" title="Editar">
-                                <i class="bi bi-pencil-square"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger btn-eliminar" data-id="${p.idproducto}" data-nombre="${p.nombre}" title="Eliminar">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>`
-                    ];
-                });
+    function initDataTable() {
+        if (tablaProductos) {
+            tablaProductos.ajax.reload(null, false);
+            return;
+        }
 
-                if (tablaProductos) {
-                    tablaProductos.clear().destroy();
-                }
-
-                tablaProductos = $('#tabla-productos').DataTable({
-                    data: rows,
-                    columns: [
-                        { title: 'Imagen', orderable: false, searchable: false },
-                        { title: 'Código' },
-                        { title: 'Nombre' },
-                        { title: 'Tipo' },
-                        { title: 'Marca' },
-                        { title: 'Acciones', orderable: false, searchable: false, className: 'text-center' }
-                    ],
-                    responsive: true,
-                    language: {
-                        url: window.BASE_URL + '/assets/lib/datatables/js/es-ES.json'
+        tablaProductos = $('#tabla-productos').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: window.BASE_URL + window.ROUTES.productos_listar,
+                type: 'POST'
+            },
+            columns: [
+                {
+                    data: 'imgproducto',
+                    render: function (data) {
+                        if (data) {
+                            return '<img src="' + window.BASE_URL + '/' + data + '" class="rounded" style="width:50px;height:50px;object-fit:cover;" onerror="this.onerror=null;this.src=\'' + window.BASE_URL + '/assets/img/placeholder-product.svg\';">';
+                        }
+                        return '<span class="badge bg-secondary">Sin imagen</span>';
                     },
-                    pageLength: 10,
-                    lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'Todos']],
-                    order: [[2, 'asc']],
-                    dom: '<"row mb-3"<"col-md-6"l><"col-md-6"f>>rtip'
-                });
-            }).fail(function () {
-                if (tablaProductos) tablaProductos.clear().destroy();
-                $('#tabla-productos tbody').html('<tr><td colspan="6" class="text-center text-muted py-4">Error al cargar productos</td></tr>');
-            });
+                    orderable: false,
+                    searchable: false
+                },
+                { data: 'codigo' },
+                { data: 'nombre' },
+                {
+                    data: 'tipo_producto',
+                    render: function (data) {
+                        return data || '-';
+                    }
+                },
+                {
+                    data: 'marca',
+                    render: function (data) {
+                        return data || '-';
+                    }
+                },
+                {
+                    data: 'idproducto',
+                    render: function (data, type, row) {
+                        if (type === 'display') {
+                            return '<div class="d-flex justify-content-center gap-2">' +
+                                '<button class="btn btn-sm btn-warning btn-editar" data-id="' + data + '" title="Editar">' +
+                                    '<i class="bi bi-pencil-square"></i>' +
+                                '</button>' +
+                                '<button class="btn btn-sm btn-danger btn-eliminar" data-id="' + data + '" data-nombre="' + row.nombre + '" title="Eliminar">' +
+                                    '<i class="bi bi-trash"></i>' +
+                                '</button>' +
+                            '</div>';
+                        }
+                        return data;
+                    },
+                    orderable: false,
+                    searchable: false,
+                    className: 'text-center'
+                }
+            ],
+            responsive: true,
+            language: {
+                url: window.BASE_URL + '/assets/lib/datatables/js/es-ES.json'
+            },
+            pageLength: 10,
+            lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'Todos']],
+            order: [[2, 'asc']],
+            dom: '<"row mb-3"<"col-md-6"l><"col-md-6"f>>rtip'
+        });
     }
 
     /* ===== Eventos ===== */
@@ -267,7 +284,7 @@ $(function () {
     });
 
     $('#btn-ver-productos').on('click', function () {
-        cargarProductos();
+        initDataTable();
     });
 
     /* ===== Validaciones en tiempo real ===== */
@@ -330,6 +347,9 @@ $(function () {
                         showConfirmButton: false
                     });
                     resetFormulario();
+                    if (tablaProductos) {
+                        tablaProductos.ajax.reload(null, false);
+                    }
                 } else {
                     Swal.fire({ icon: 'error', title: 'Error', text: res.mensaje });
                 }
@@ -384,53 +404,57 @@ $(function () {
     /* ===== Eliminar Producto ===== */
 
     $(document).on('click', '.btn-eliminar', function () {
+        if (eliminandoProducto) return;
+
         const id = $(this).data('id');
         const nombre = $(this).data('nombre');
 
-        $.ajax({
-            url: window.BASE_URL + window.ROUTES.productos_obtener,
-            type: 'POST',
-            data: { id: id },
-            dataType: 'json'
-        }).done(function (res) {
-            if (res.ok && res.data && res.data.tiene_ventas) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'No se puede eliminar',
-                    text: `El producto "${nombre}" no se puede eliminar porque tiene ventas asociadas.`,
-                    confirmButtonColor: '#dc3545'
-                });
-                return;
-            }
-
-            Swal.fire({
-                icon: 'warning',
-                title: '¿Eliminar producto?',
-                text: `¿Estás seguro de eliminar "${nombre}"?`,
-                showCancelButton: true,
-                confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#dc3545'
-            }).then(function (result) {
-                if (result.isConfirmed) {
-                    Ajax.post(window.ROUTES.productos_eliminar, { id: id })
-                        .done(function (res) {
-                            if (res.ok) {
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Éxito',
-                                    text: res.mensaje,
-                                    timer: 1500,
-                                    showConfirmButton: false
-                                });
-                                cargarProductos();
-                            } else {
-                                Swal.fire({ icon: 'error', title: 'Error', text: res.mensaje });
-                            }
-                        });
+        Ajax.post(window.ROUTES.productos_obtener, { id: id })
+            .done(function (res) {
+                if (res.ok && res.data && res.data.tiene_ventas) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No se puede eliminar',
+                        text: 'El producto "' + nombre + '" no se puede eliminar porque tiene ventas asociadas.',
+                        confirmButtonColor: '#dc3545'
+                    });
+                    return;
                 }
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: '¿Eliminar producto?',
+                    text: '¿Estás seguro de eliminar "' + nombre + '"?',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#dc3545'
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        eliminandoProducto = true;
+                        Ajax.post(window.ROUTES.productos_eliminar, { id: id })
+                            .done(function (res) {
+                                if (res.ok) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Éxito',
+                                        text: res.mensaje,
+                                        timer: 1500,
+                                        showConfirmButton: false
+                                    });
+                                    if (tablaProductos) {
+                                        tablaProductos.ajax.reload(null, false);
+                                    }
+                                } else {
+                                    Swal.fire({ icon: 'error', title: 'Error', text: res.mensaje });
+                                }
+                            })
+                            .always(function () {
+                                eliminandoProducto = false;
+                            });
+                    }
+                });
             });
-        });
     });
 
     /* ===== Guardar Tipo Producto ===== */
