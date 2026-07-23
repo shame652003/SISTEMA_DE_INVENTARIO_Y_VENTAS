@@ -372,8 +372,12 @@ class Reporte extends Model
             $params
         ) ?: [];
 
-        $abonoParams = $params;
+        $abonoParams = [];
         $abonoWhere = str_replace('p.fecha_pago', 'p2.fecha_pago', $where);
+        if ($inicio !== '' && $fin !== '') {
+            $abonoParams[] = $inicio;
+            $abonoParams[] = $fin;
+        }
         if ($metodo !== '') {
             $abonoWhere .= " AND tp2.tipoPago = ?";
             $abonoParams[] = $metodo;
@@ -546,5 +550,21 @@ class Reporte extends Model
         );
 
         return array_merge($ventas ?: [], $abonos ?: []);
+    }
+
+    public function obtenerFechasVentaAbonos(array $ids): array
+    {
+        if (empty($ids)) return [];
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        return $this->fetchAll(
+            "SELECT aa.idPago, MIN(v.fecha) AS fecha_venta
+             FROM abonos_aplicados aa
+             INNER JOIN creditos_detalle cd ON cd.idCreditoDetalle = aa.idCreditoDetalle
+             INNER JOIN ventas_encabezado v ON v.idVenta = cd.idVenta
+             WHERE aa.idPago IN ($placeholders)
+             GROUP BY aa.idPago",
+            $ids
+        ) ?: [];
     }
 }

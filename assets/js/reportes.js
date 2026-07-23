@@ -363,7 +363,7 @@ $(function () {
 
                         var row = '<tr class="fila-abono-historial fila-abono-click" data-idabono="' + p.idVenta + '" style="cursor:pointer;">' +
                             '<td><span class="badge bg-info">Abono a credito</span></td>' +
-                            '<td>' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
+                            '<td data-sort="' + p.fecha + ' ' + p.hora + '">' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
                             '<td>' + p.cliente + ' <small class="text-muted">(' + p.cedula_cliente + ')</small></td>' +
                             '<td>' + badgeTipoPago(p.metodos_pago) + '</td>' +
                             '<td class="text-end fw-bold" data-sort="' + parseFloat(p.total_bcv) + '">' + formatoMoneda(p.total_bcv, 'USD') + '</td>' +
@@ -407,7 +407,7 @@ $(function () {
 
                     var row = '<tr class="fila-pago' + claseAdicional + '" data-idventa="' + p.idVenta + '" style="cursor:pointer;">' +
                         '<td><span class="fw-bold">#' + p.idVenta + '</span></td>' +
-                        '<td>' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
+                        '<td data-sort="' + p.fecha + ' ' + p.hora + '">' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
                         '<td>' + p.cliente + ' <small class="text-muted">(' + p.cedula_cliente + ')</small></td>' +
                         '<td>' + badgesMetodosPago(p.metodos_pago) + '</td>' +
                         '<td class="text-end fw-bold" data-sort="' + parseFloat(p.total_bcv) + '">' + totalBcvCol + '</td>' +
@@ -419,7 +419,7 @@ $(function () {
                 }
 
                 dtHistorial = $tablaHistorial.DataTable($.extend({}, dtConfigBase, {
-                    order: [[1, 'desc'], [0, 'desc']],
+                    order: [[1, 'desc']],
                     columnDefs: [
                         { orderable: false, targets: [3, 6] }
                     ]
@@ -449,7 +449,7 @@ $(function () {
             if (filtroActivo === 'todas') return true;
             if (filtroActivo === 'abonos') return $(row).hasClass('fila-abono-historial');
             if (filtroActivo === 'creditos') return $(row).hasClass('fila-credito-pendiente') || $(row).hasClass('fila-credito-pagado');
-            if (filtroActivo === 'finalizadas') return !$(row).hasClass('fila-credito-pendiente') && !$(row).hasClass('fila-abono-historial');
+            if (filtroActivo === 'finalizadas') return !$(row).hasClass('fila-credito-pendiente');
             return true;
         });
         if (dtHistorial) dtHistorial.draw();
@@ -1257,7 +1257,8 @@ $(function () {
             fecha_inicio: inicio,
             fecha_fin: fin,
             metodo_pago: $('#metodo-pago').val(),
-            cedula_cliente: $('#select-cliente').val()
+            cedula_cliente: $('#select-cliente').val(),
+            filtro: filtroActivo
         };
         descargarPdf(window.ROUTES.reportes_pagos_pdf_historial, data, $(this));
     });

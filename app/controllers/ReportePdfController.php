@@ -17,9 +17,46 @@ class ReportePdfController extends Controller
         $fin = trim($_POST['fecha_fin'] ?? '');
         $metodo = trim($_POST['metodo_pago'] ?? '');
         $cedulaCliente = (int) ($_POST['cedula_cliente'] ?? 0);
+        $filtro = trim($_POST['filtro'] ?? 'todas');
 
         $reporte = new Reporte();
         $ventas = $reporte->pagosDetalle($inicio, $fin, $metodo, $cedulaCliente);
+
+        // Aplicar filtro rápido
+        if ($filtro === 'abonos') {
+            $ventas = array_filter($ventas, fn($v) => ($v['tipo_fila'] ?? 'venta') === 'abono');
+        } elseif ($filtro === 'creditos') {
+            $ventas = array_filter($ventas, fn($v) => ($v['credito_pagado'] ?? null) !== null);
+        } elseif ($filtro === 'finalizadas') {
+            $ventas = array_filter($ventas, fn($v) => ($v['credito_pagado'] ?? 1) !== 0);
+        }
+        $ventas = array_values($ventas);
+
+        // Marcar abonos del mismo día (no sumar a totales)
+        $abonoIds = [];
+        foreach ($ventas as $v) {
+            if (($v['tipo_fila'] ?? 'venta') === 'abono') {
+                $abonoIds[] = (int) $v['idVenta'];
+            }
+        }
+
+        if (!empty($abonoIds)) {
+            $fechas = (new Reporte())->obtenerFechasVentaAbonos($abonoIds);
+            $mapa = [];
+            foreach ($fechas as $f) {
+                $mapa[(int)$f['idPago']] = $f['fecha_venta'];
+            }
+            foreach ($ventas as &$v) {
+                if (($v['tipo_fila'] ?? 'venta') === 'abono') {
+                    $idPago = (int) $v['idVenta'];
+                    $fv = $mapa[$idPago] ?? null;
+                    $v['mismo_dia'] = ($fv !== null && $fv === $v['fecha']);
+                } else {
+                    $v['mismo_dia'] = false;
+                }
+            }
+            unset($v);
+        }
 
         $filtros = [];
         if ($metodo !== '') $filtros[] = 'Metodo: ' . $metodo;
@@ -93,6 +130,29 @@ class ReportePdfController extends Controller
 
         $filas = '';
         foreach ($ventas as $v) {
+            $esAbono = ($v['tipo_fila'] ?? 'venta') === 'abono';
+
+            if ($esAbono) {
+                $mismoDia = !empty($v['mismo_dia']);
+                $vesAbono = ($v['monedas'] ?? '') === 'VES' ? (float) ($v['monto_recibido'] ?? 0) : 0;
+
+                $filas .= '<tr>
+                    <td><span class="badge badge-info">Abono a credito</span>' . ($mismoDia ? ' <small>(mismo dia)</small>' : '') . '</td>
+                    <td>' . htmlspecialchars($v['cliente']) . '</td>
+                    <td>' . $v['metodos_pago'] . '</td>
+                    <td class="right">$' . number_format($v['total_bcv'], 2) . '</td>
+                    <td class="right">' . ($vesAbono > 0 ? 'Bs. ' . number_format($vesAbono, 2) : '—') . '</td>
+                    <td>—</td>
+                    <td>' . htmlspecialchars($v['vendedor'] ?? 'Sistema') . '</td>
+                </tr>';
+
+                if (!$mismoDia) {
+                    $sumaBcv += (float) $v['total_bcv'];
+                    $sumaVes += round($vesAbono, 2);
+                }
+                continue;
+            }
+
             $monedasStr = $v['monedas'] ?? '';
             $esVes = strpos($monedasStr, 'VES') !== false;
             $esUsd = strpos($monedasStr, 'USD') !== false;

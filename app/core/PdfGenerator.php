@@ -43,7 +43,7 @@ class PdfGenerator
     {
         return '
         <style>
-            @page { margin: 15mm 12mm; }
+            @page { margin: 20mm 12mm 20mm 12mm; }
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: Helvetica, Arial, sans-serif; color: #1a1a1a; line-height: 1.4; padding: 0 4mm; }
             .header { background: linear-gradient(135deg, #ea580c, #c2410c); color: #fff; padding: 20px 24px; border-radius: 0 0 8px 8px; margin-bottom: 16px; }
