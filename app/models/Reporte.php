@@ -151,7 +151,12 @@ class Reporte extends Model
             "SELECT cd.idCreditoDetalle, cd.idVenta, cd.monto_credito_usd, cd.monto_credito_bcv,
                     cd.saldo_pendiente_usd, cd.saldo_pendiente_bcv, cd.fecha_creacion,
                     v.fecha AS fecha_venta,
-                    CONCAT(c.nombre, ' ', c.apellido) AS cliente
+                    CONCAT(c.nombre, ' ', c.apellido) AS cliente,
+                    CASE WHEN EXISTS (
+                        SELECT 1 FROM pagos pg
+                        INNER JOIN tipo_de_pagos tp ON tp.idtipo_de_pagos = pg.idtipo_de_pagos
+                        WHERE pg.idVenta = cd.idVenta AND tp.tipoPago = 'Credito' AND pg.moneda = 'USD'
+                    ) THEN 'USD' ELSE 'VES' END AS moneda_credito
              FROM creditos_detalle cd
              INNER JOIN ventas_encabezado v ON v.idVenta = cd.idVenta
              INNER JOIN cliente c ON c.cedula = cd.cedula_cliente
@@ -201,7 +206,12 @@ class Reporte extends Model
     {
         $pendientes = $this->fetchAll(
             "SELECT idCreditoDetalle, idVenta, monto_credito_usd, monto_credito_bcv,
-                    saldo_pendiente_usd, saldo_pendiente_bcv
+                    saldo_pendiente_usd, saldo_pendiente_bcv,
+                    CASE WHEN EXISTS (
+                        SELECT 1 FROM pagos pg
+                        INNER JOIN tipo_de_pagos tp ON tp.idtipo_de_pagos = pg.idtipo_de_pagos
+                        WHERE pg.idVenta = creditos_detalle.idVenta AND tp.tipoPago = 'Credito' AND pg.moneda = 'USD'
+                    ) THEN 'USD' ELSE 'VES' END AS moneda_credito
              FROM creditos_detalle
              WHERE cedula_cliente = ? AND saldo_pendiente_bcv > 0 AND status = 1
              ORDER BY fecha_creacion ASC, idCreditoDetalle ASC",
@@ -220,6 +230,18 @@ class Reporte extends Model
 
         if ($montoRecibido <= 0) {
             return ['ok' => false, 'mensaje' => 'El monto debe ser mayor a cero.'];
+        }
+
+        // Validar que la moneda coincida con la de los créditos pendientes
+        $monedasCredito = array_unique(array_map(function($c) {
+            return $c['moneda_credito'] ?? 'VES';
+        }, $pendientes));
+
+        if (count($monedasCredito) === 1) {
+            $monedaCredito = reset($monedasCredito);
+            if ($monedaCredito !== $moneda) {
+                return ['ok' => false, 'mensaje' => 'Este credito fue creado en ' . $monedaCredito . '. Debe abonar en la misma moneda (' . $monedaCredito . ').'];
+            }
         }
 
         $totalPendienteBcv = 0;
@@ -243,16 +265,28 @@ class Reporte extends Model
             $idPago = (int) $this->lastInsertId();
 
             $restanteBcv = $montoBcv;
+            $restanteUsd = ($moneda === 'USD') ? $montoRecibido : 0;
             $ventasPagadas = [];
 
             foreach ($pendientes as $cred) {
-                if ($restanteBcv <= 0.001) break;
-
                 $saldoBcv = (float) $cred['saldo_pendiente_bcv'];
                 $saldoUsd = (float) $cred['saldo_pendiente_usd'];
-                $aplicadoBcv = min($restanteBcv, $saldoBcv);
-                $ratio = $saldoBcv > 0 ? ($aplicadoBcv / $saldoBcv) : 0;
-                $aplicadoUsd = round($saldoUsd * $ratio, 2);
+                $monedaCredito = $cred['moneda_credito'] ?? 'VES';
+
+                if ($moneda === 'USD' && $monedaCredito === 'USD') {
+                    if ($restanteUsd <= 0.001) break;
+                    $aplicadoUsd = min($restanteUsd, $saldoUsd);
+                    $ratioUsd = $saldoUsd > 0 ? ($aplicadoUsd / $saldoUsd) : 0;
+                    $aplicadoBcv = round($saldoBcv * $ratioUsd, 2);
+                    $restanteUsd -= $aplicadoUsd;
+                    $restanteBcv -= $aplicadoBcv;
+                } else {
+                    if ($restanteBcv <= 0.001) break;
+                    $aplicadoBcv = min($restanteBcv, $saldoBcv);
+                    $ratio = $saldoBcv > 0 ? ($aplicadoBcv / $saldoBcv) : 0;
+                    $aplicadoUsd = round($saldoUsd * $ratio, 2);
+                    $restanteBcv -= $aplicadoBcv;
+                }
 
                 $this->execute(
                     "INSERT INTO abonos_aplicados (idPago, idCreditoDetalle, monto_aplicado_usd, monto_aplicado_bcv)
@@ -340,9 +374,15 @@ class Reporte extends Model
                     COALESCE(
                         (SELECT cd.saldo_pendiente_bcv
                          FROM creditos_detalle cd
+                          WHERE cd.idVenta = p.idVenta AND cd.status = 1
+                          LIMIT 1), NULL
+                    ) AS credito_pendiente_bcv,
+                    COALESCE(
+                        (SELECT cd.saldo_pendiente_usd
+                         FROM creditos_detalle cd
                          WHERE cd.idVenta = p.idVenta AND cd.status = 1
                          LIMIT 1), NULL
-                    ) AS credito_pendiente_bcv,
+                    ) AS credito_pendiente_usd,
                     COALESCE(
                         (SELECT cd.monto_credito_usd
                          FROM creditos_detalle cd
@@ -427,7 +467,21 @@ class Reporte extends Model
 
     public function creditosPendientes(): array
     {
-        return $this->fetchAll("SELECT * FROM vw_creditos_pendientes ORDER BY saldo_deudor_bcv DESC");
+        return $this->fetchAll(
+            "SELECT cr.idCredito, c.cedula, CONCAT(c.nombre, ' ', c.apellido) AS cliente,
+                    cr.saldo_deudor_usd, cr.saldo_deudor_bcv, cr.ultima_actualizacion,
+                    CASE WHEN EXISTS (
+                        SELECT 1 FROM creditos_detalle cd2
+                        INNER JOIN pagos pg ON pg.idVenta = cd2.idVenta
+                        INNER JOIN tipo_de_pagos tp ON tp.idtipo_de_pagos = pg.idtipo_de_pagos
+                        WHERE cd2.cedula_cliente = cr.cedula_cliente AND tp.tipoPago = 'Credito' AND pg.moneda = 'USD'
+                        LIMIT 1
+                    ) THEN 'USD' ELSE 'VES' END AS moneda_credito
+             FROM creditos cr
+             INNER JOIN cliente c ON c.cedula = cr.cedula_cliente
+             WHERE cr.saldo_deudor_bcv > 0
+             ORDER BY cr.saldo_deudor_bcv DESC"
+        ) ?: [];
     }
 
     public function detalleAbono(int $idPago): array
@@ -503,9 +557,15 @@ class Reporte extends Model
                     COALESCE(
                         (SELECT cd.saldo_pendiente_bcv
                          FROM creditos_detalle cd
+                          WHERE cd.idVenta = p.idVenta AND cd.status = 1
+                          LIMIT 1), NULL
+                    ) AS credito_pendiente_bcv,
+                    COALESCE(
+                        (SELECT cd.saldo_pendiente_usd
+                         FROM creditos_detalle cd
                          WHERE cd.idVenta = p.idVenta AND cd.status = 1
                          LIMIT 1), NULL
-                    ) AS credito_pendiente_bcv,
+                    ) AS credito_pendiente_usd,
                     COALESCE(
                         (SELECT cd.monto_credito_usd
                          FROM creditos_detalle cd

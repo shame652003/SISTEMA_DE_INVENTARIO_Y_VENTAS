@@ -366,7 +366,7 @@ $(function () {
                             '<td data-sort="' + p.fecha + ' ' + p.hora + '">' + formatoFecha(p.fecha) + ' <small class="text-muted">' + formatoHora(p.hora) + '</small></td>' +
                             '<td>' + p.cliente + ' <small class="text-muted">(' + p.cedula_cliente + ')</small></td>' +
                             '<td>' + badgeTipoPago(p.metodos_pago) + '</td>' +
-                            '<td class="text-end fw-bold" data-sort="' + parseFloat(p.total_bcv) + '">' + formatoMoneda(p.total_bcv, 'USD') + '</td>' +
+                            '<td class="text-end fw-bold" data-sort="' + parseFloat(p.total_bcv) + '">' + formatoMoneda(p.total_bcv, 'USD') + (esAbonoVes ? '' : ' <small class="text-muted">USD</small>') + '</td>' +
                             '<td class="text-end fw-bold" data-sort="' + totalVesAbono.toFixed(2) + '">' + totalVesAbonoCol + '</td>' +
                             '<td>' + (p.referencia || '<span class="text-muted">—</span>') + '</td>' +
                             '<td><small class="text-muted">' + p.vendedor + '</small></td>' +
@@ -472,7 +472,14 @@ $(function () {
 
         var inicioCustom = $('#fecha-inicio').val();
         var finCustom = $('#fecha-fin').val();
-        var usarCustom = !$('#panel-filtros-avanzados').hasClass('d-none') && inicioCustom && finCustom;
+        var panelAbierto = !$('#panel-filtros-avanzados').hasClass('d-none');
+
+        if (panelAbierto && ((inicioCustom && !finCustom) || (!inicioCustom && finCustom))) {
+            Swal.fire('Fechas requeridas', 'Debe seleccionar ambas fechas en los filtros avanzados.', 'warning');
+            return;
+        }
+
+        var usarCustom = panelAbierto && inicioCustom && finCustom;
 
         if (usarCustom) {
             inicio = inicioCustom;
@@ -584,7 +591,7 @@ $(function () {
                     var row = '<tr class="fila-credito" data-cedula="' + c.cedula + '" data-nombre="' + c.cliente + '" style="cursor:pointer;">' +
                         '<td><span class="fw-bold">' + c.cedula + '</span></td>' +
                         '<td>' + c.cliente + '</td>' +
-                        '<td class="text-end text-danger fw-bold">' + formatoMoneda(c.saldo_deudor_usd, 'USD') + '</td>' +
+                        '<td class="text-end text-danger fw-bold">' + formatoMoneda(c.saldo_deudor_usd, 'USD') + (c.moneda_credito === 'USD' ? ' <small class="text-muted">USD</small>' : '') + '</td>' +
                         '<td class="text-end text-danger fw-bold">' + formatoMoneda(c.saldo_deudor_bcv, 'USD') + '</td>' +
                         '<td>' + formatoFechaHora(c.ultima_actualizacion) + '</td>' +
                         '<td class="text-center">' +
@@ -794,20 +801,44 @@ $(function () {
             .done(function (res) {
                 var $lista = $('#abono-creditos-lista').empty();
                 if (!res.ok || !res.data || res.data.length === 0) {
-                    $lista.html('<small class="text-muted">Sin créditos detallados</small>');
+                    $lista.html('<small class="text-muted">Sin creditos detallados</small>');
                     return;
                 }
                 var html = '<div class="list-group list-group-flush small">';
+                var monedasUnicas = {};
                 for (var i = 0; i < res.data.length; i++) {
                     var c = res.data[i];
+                    monedasUnicas[c.moneda_credito] = true;
                     html += '<div class="list-group-item py-1 px-2 d-flex justify-content-between align-items-center">' +
                         '<span><strong>Venta #' + c.idVenta + '</strong> ' +
-                        '<small class="text-muted">' + formatoFecha(c.fecha_venta) + '</small></span>' +
+                        '<small class="text-muted">' + formatoFecha(c.fecha_venta) + '</small> ' +
+                        '<span class="badge bg-info">' + c.moneda_credito + '</span></span>' +
                         '<span class="text-danger">' + formatoMoneda(c.saldo_pendiente_bcv, 'USD') + '</span>' +
                         '</div>';
                 }
                 html += '</div>';
                 $lista.html(html);
+
+                // Bloquear moneda si todos los creditos son de la misma
+                var $usdBtn = $('#abono-moneda-usd');
+                var $vesBtn = $('#abono-moneda-ves');
+                $usdBtn.prop('disabled', false);
+                $vesBtn.prop('disabled', false);
+                $('label[for="abono-moneda-usd"], label[for="abono-moneda-ves"]').removeClass('opacity-50');
+
+                if (monedasUnicas['USD'] && !monedasUnicas['VES']) {
+                    $usdBtn.prop('checked', true);
+                    $vesBtn.prop('disabled', true);
+                    $('label[for="abono-moneda-ves"]').addClass('opacity-50');
+                    mostrarColumnasMoneda('USD');
+                    filtrarMetodosPago();
+                } else if (monedasUnicas['VES'] && !monedasUnicas['USD']) {
+                    $vesBtn.prop('checked', true);
+                    $usdBtn.prop('disabled', true);
+                    $('label[for="abono-moneda-usd"]').addClass('opacity-50');
+                    mostrarColumnasMoneda('VES');
+                    filtrarMetodosPago();
+                }
             });
 
         $('#abono-metodo-group').empty();
@@ -1241,7 +1272,7 @@ $(function () {
     }
 
     $('#btn-pdf-historial').on('click', function () {
-        var fechaRef = $('#select-mes').val() || '';
+        var fechaRef = $('#select-mes').val() || hoyLocal();
         var inicio = fechaRef;
         var fin = fechaRef;
 

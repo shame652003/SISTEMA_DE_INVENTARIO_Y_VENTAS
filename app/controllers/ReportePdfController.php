@@ -74,7 +74,7 @@ class ReportePdfController extends Controller
         $nombreArchivo .= '.pdf';
 
         $pdf = new PdfGenerator();
-        $html = $this->buildHistorialHtml($ventas ?: [], $inicio, $fin, $filtros);
+        $html = $this->buildHistorialHtml($ventas ?: [], $inicio, $fin, $filtros, $filtro);
         $pdf->generar($html, $nombreArchivo);
     }
 
@@ -113,10 +113,19 @@ class ReportePdfController extends Controller
         $pdf->generar($html, 'venta_' . $id . '_' . $cliente . '.pdf');
     }
 
-    private function buildHistorialHtml(array $ventas, string $inicio, string $fin, array $filtros): string
+    private function buildHistorialHtml(array $ventas, string $inicio, string $fin, array $filtros, string $filtroActivo = 'todas'): string
     {
         $g = new PdfGenerator();
         $css = $g->cssComun();
+
+        $filtroTitulo = ' — Todas las ventas';
+        if ($filtroActivo === 'finalizadas') {
+            $filtroTitulo = ' — Solo Finalizadas';
+        } elseif ($filtroActivo === 'creditos') {
+            $filtroTitulo = ' — Solo Créditos';
+        } elseif ($filtroActivo === 'abonos') {
+            $filtroTitulo = ' — Solo Abonos';
+        }
 
         $totalVentas = count($ventas);
         $ventasFinalizadas = 0;
@@ -128,27 +137,34 @@ class ReportePdfController extends Controller
         $sumaPendienteBcv = 0;
         $sumaPendienteVes = 0;
 
-        $filas = '';
+        $filasVentas = '';
+        $filasAbonos = '';
+        $countAbonos = 0;
+
         foreach ($ventas as $v) {
             $esAbono = ($v['tipo_fila'] ?? 'venta') === 'abono';
 
             if ($esAbono) {
+                $countAbonos++;
                 $mismoDia = !empty($v['mismo_dia']);
                 $vesAbono = ($v['monedas'] ?? '') === 'VES' ? (float) ($v['monto_recibido'] ?? 0) : 0;
+                $esAbonoUsd = ($v['monedas'] ?? '') === 'USD';
 
-                $filas .= '<tr>
-                    <td><span class="badge badge-info">Abono a credito</span>' . ($mismoDia ? ' <small>(mismo dia)</small>' : '') . '</td>
-                    <td>' . htmlspecialchars($v['cliente']) . '</td>
-                    <td>' . $v['metodos_pago'] . '</td>
+                $filasAbonos .= '<tr>
+                    <td>' . $this->fechaEs($v['fecha']) . ($mismoDia ? ' <span style="font-size:7px;color:#999;">(mismo dia)</span>' : '') . '</td>
+                    <td class="td-cliente">' . htmlspecialchars($v['cliente']) . '</td>
                     <td class="right">$' . number_format($v['total_bcv'], 2) . '</td>
-                    <td class="right">' . ($vesAbono > 0 ? 'Bs. ' . number_format($vesAbono, 2) : '—') . '</td>
-                    <td>—</td>
-                    <td>' . htmlspecialchars($v['vendedor'] ?? 'Sistema') . '</td>
+                    <td class="right">' . ($vesAbono > 0 ? 'Bs. ' . number_format($vesAbono, 2) : ($esAbonoUsd ? '$' . number_format($v['monto_recibido'] ?? 0, 2) . ' USD' : '—')) . '</td>
+                    <td class="td-metodo">' . $v['metodos_pago'] . '</td>
                 </tr>';
 
                 if (!$mismoDia) {
-                    $sumaBcv += (float) $v['total_bcv'];
-                    $sumaVes += round($vesAbono, 2);
+                    if ($esAbonoUsd) {
+                        $sumaUsd += (float) ($v['total_bcv'] ?? 0);
+                    } else {
+                        $sumaBcv += (float) $v['total_bcv'];
+                        $sumaVes += round($vesAbono, 2);
+                    }
                 }
                 continue;
             }
@@ -166,126 +182,132 @@ class ReportePdfController extends Controller
                 $ventasFinalizadas++;
             }
 
-            if ($esVes && $esUsd) {
-                $totalBcvCol = '$' . number_format($v['total_bcv'], 2);
-                $totalVesCol = 'Bs. ' . number_format($v['total_ves'], 2);
-            } elseif ($esVes) {
+            // Columnas simplificadas
+            if ($soloUsd) {
+                $totalBcvCol = '$' . number_format($v['total_usd'], 2) . ' <span style="font-size:7px;color:#999;">USD</span>';
+                $pagadoVesCol = '—';
+                $saldoVesCol = '—';
+            } else {
                 $totalBcvCol = '$' . number_format($v['total_bcv'], 2);
                 $creditoVes = (float) ($v['credito_monto_ves'] ?? 0);
-                if ($tieneCredito && $creditoVes > 0) {
-                    $pagadoVes = round((float) $v['total_ves'] - $creditoVes, 2);
-                    $totalVesCol = 'Bs. ' . number_format($pagadoVes, 2) . ' pagado<br>'
-                        . '<small>+ Bs. ' . number_format($creditoVes, 2) . ' credito ' . ($creditoPendiente ? 'pendiente' : 'pagado') . '</small><br>'
-                        . '<small>= Bs. ' . number_format($v['total_ves'], 2) . '</small>';
-                } else {
-                    $totalVesCol = 'Bs. ' . number_format($v['total_ves'], 2);
-                }
-            } else {
-                $totalBcvCol = '$' . number_format($v['total_usd'], 2);
-                $totalVesCol = '-';
+                $pagadoVes = round((float) $v['total_ves'] - $creditoVes, 2);
+                $pagadoVesCol = 'Bs. ' . number_format($pagadoVes, 2);
+                $saldoVesCol = ($creditoVes > 0) ? 'Bs. ' . number_format($creditoVes, 2) . ' <span class="badge badge-pendiente">Pendiente</span>' : '—';
             }
+
+            $estado = $creditoPendiente
+                ? '<span class="badge badge-pendiente">PENDIENTE</span>'
+                : (($v['credito_pagado'] === 1)
+                    ? '<span class="badge badge-pagado">PAGADO</span>'
+                    : '<span class="badge badge-pagado">PAGADO</span>');
+
+            $filasVentas .= '<tr>
+                <td>' . $this->fechaEs($v['fecha']) . '</td>
+                <td class="td-cliente">' . htmlspecialchars($v['cliente']) . '</td>
+                <td class="td-metodo">' . $v['metodos_pago'] . '</td>
+                <td class="right">' . $totalBcvCol . '</td>
+                <td class="right">' . $pagadoVesCol . '</td>
+                <td class="right">' . $saldoVesCol . '</td>
+                <td>' . $estado . '</td>
+                <td class="td-vendedor">' . htmlspecialchars($v['vendedor']) . '</td>
+            </tr>';
 
             if ($creditoPendiente) {
                 if ($soloUsd) {
-                    $sumaPendienteUsd += (float) ($v['credito_monto_usd'] ?? 0);
-                    $sumaUsd += (float) $v['total_usd'] - (float) ($v['credito_monto_usd'] ?? 0);
+                    $sumaPendienteUsd += (float) ($v['credito_pendiente_usd'] ?? 0);
+                    $sumaUsd += (float) $v['total_usd'] - (float) ($v['credito_pendiente_usd'] ?? 0);
                 } elseif ($esVes) {
-                    $sumaPendienteBcv += (float) ($v['credito_monto_bcv'] ?? 0);
+                    $sumaPendienteBcv += (float) ($v['credito_pendiente_bcv'] ?? 0);
                     $sumaPendienteVes += (float) ($v['credito_monto_ves'] ?? 0);
-                    $sumaBcv += (float) $v['total_bcv'] - (float) ($v['credito_monto_bcv'] ?? 0);
+                    $sumaBcv += (float) $v['total_bcv'] - (float) ($v['credito_pendiente_bcv'] ?? 0);
                     $sumaVes += round((float) $v['total_ves'] - (float) ($v['credito_monto_ves'] ?? 0), 2);
                 }
             } else {
                 if ($soloUsd) {
-                    $sumaUsd += (float) $v['total_usd'];
+                    if ($v['credito_pagado'] === 1) {
+                        $sumaUsd += (float) $v['total_usd'] - (float) ($v['credito_monto_usd'] ?? 0);
+                    } else {
+                        $sumaUsd += (float) $v['total_usd'];
+                    }
                 } elseif ($esVes) {
                     if ($v['credito_pagado'] === 1) {
-                        $sumaBcv += (float) $v['total_bcv'];
-                        $sumaVes += (float) $v['total_ves'];
-                    } else {
                         $sumaBcv += (float) $v['total_bcv'] - (float) ($v['credito_monto_bcv'] ?? 0);
+                        $sumaVes += round((float) $v['total_ves'] - (float) ($v['credito_monto_ves'] ?? 0), 2);
+                    } else {
+                        $sumaBcv += (float) $v['total_bcv'] - (float) ($v['credito_pendiente_bcv'] ?? 0);
                         $sumaVes += round((float) $v['total_ves'] - (float) ($v['credito_monto_ves'] ?? 0), 2);
                     }
                 }
             }
-
-            $estado = $creditoPendiente ? '<span class="badge badge-danger">Pendiente</span>' : (($v['credito_pagado'] === 1) ? '<span class="badge badge-success">Pagado</span>' : '-');
-            $filas .= '<tr>
-                <td>' . $this->fechaEs($v['fecha']) . '</td>
-                <td>' . htmlspecialchars($v['cliente']) . '</td>
-                <td>' . $v['metodos_pago'] . '</td>
-                <td class="right">' . $totalBcvCol . '</td>
-                <td class="right">' . $totalVesCol . '</td>
-                <td>' . $estado . '</td>
-                <td>' . htmlspecialchars($v['vendedor']) . '</td>
-            </tr>';
         }
 
         $filtrosStr = empty($filtros) ? '' : ' | ' . implode(' | ', $filtros);
         $ahora = new \DateTime('now', new \DateTimeZone('America/Caracas'));
+        $countVentas = $totalVentas - $countAbonos;
 
-        $infoExtra = '<span>Total ventas: <strong>' . $totalVentas . '</strong></span>';
-        $infoExtra .= '<span>Ventas finalizadas: <strong>' . $ventasFinalizadas . '</strong></span>';
-        if ($ventasConCredito > 0) {
-            $infoExtra .= '<span>Con credito pendiente: <strong>' . $ventasConCredito . '</strong></span>';
-        }
-        if ($sumaUsd > 0) {
-            $infoExtra .= '<span>Total USD: <strong>$' . number_format($sumaUsd, 2) . '</strong></span>';
-        }
-        if ($sumaBcv > 0) {
-            $infoExtra .= '<span>Total BCV: <strong>$' . number_format($sumaBcv, 2) . '</strong></span>';
-        }
-        if ($sumaVes > 0) {
-            $infoExtra .= '<span>Total VES: <strong>Bs. ' . number_format($sumaVes, 2) . '</strong></span>';
-        }
-        $infoExtra .= '<span>Generado: ' . $this->fechaEs($ahora->format('Y-m-d')) . ' ' . $ahora->format('h:i A') . '</span>';
-
-        $pendienteRow = '';
-        $pendienteHtml = [];
-        if ($sumaPendienteUsd > 0) $pendienteHtml[] = '<span style="margin-left:16px;">- <strong>$' . number_format($sumaPendienteUsd, 2) . ' USD</strong></span>';
-        if ($sumaPendienteBcv > 0) $pendienteHtml[] = '<span style="margin-left:16px;">- <strong>$' . number_format($sumaPendienteBcv, 2) . ' BCV</strong></span>';
-        if ($sumaPendienteVes > 0) $pendienteHtml[] = '<span style="margin-left:16px;">- <strong>Bs. ' . number_format($sumaPendienteVes, 2) . ' VES</strong></span>';
-        if (!empty($pendienteHtml)) {
-            $pendienteRow = '<div class="summary" style="margin-bottom:8px;background:#fff0f0;border-left-color:#dc2626;">Creditos pendientes no cobrados:<br>' . implode('<br>', $pendienteHtml) . '</div>';
-        }
-
-        $totalGenUsd = $sumaUsd + $sumaPendienteUsd;
-        $totalGenBcv = $sumaBcv + $sumaPendienteBcv;
-        $totalGenVes = $sumaVes + $sumaPendienteVes;
-
-        $generalHtml = [];
-        if ($totalGenUsd > 0) $generalHtml[] = '<span style="margin-left:16px;">- <strong>$' . number_format($totalGenUsd, 2) . ' USD</strong> (cobrado: $' . number_format($sumaUsd, 2) . ' + pendiente: $' . number_format($sumaPendienteUsd, 2) . ')</span>';
-        if ($totalGenBcv > 0) $generalHtml[] = '<span style="margin-left:16px;">- <strong>$' . number_format($totalGenBcv, 2) . ' BCV</strong> (cobrado: $' . number_format($sumaBcv, 2) . ' + pendiente: $' . number_format($sumaPendienteBcv, 2) . ')</span>';
-        if ($totalGenVes > 0) $generalHtml[] = '<span style="margin-left:16px;">- <strong>Bs. ' . number_format($totalGenVes, 2) . ' VES</strong> (cobrado: Bs. ' . number_format($sumaVes, 2) . ' + pendiente: Bs. ' . number_format($sumaPendienteVes, 2) . ')</span>';
-
-        $generalRow = '';
-        if (!empty($generalHtml)) {
-            $generalRow = '<div class="summary" style="margin-bottom:12px;">Total General (cobrado + pendiente):<br>' . implode('<br>', $generalHtml) . '</div>';
-        }
-
-        $fechaHeader = 'Todas las fechas';
-        if ($inicio !== '') {
-            $fechaHeader = $this->fechaEs($inicio);
-            if ($fin !== '' && $inicio !== $fin) {
-                $fechaHeader .= ' - ' . $this->fechaEs($fin);
-            }
+        $fechaHeader = ($inicio !== '') ? $this->fechaEs($inicio) : 'Todas las fechas';
+        $prefijo = ($inicio !== '') ? 'Reporte del ' : 'Reporte: ';
+        if ($inicio !== '' && $fin !== '' && $inicio !== $fin) {
+            $fechaHeader .= ' — ' . $this->fechaEs($fin);
         }
         $fechaHeader .= $filtrosStr;
 
-        return '<!DOCTYPE html><html><head><meta charset="utf-8">' . $css . '</head><body>
-            <div class="header">
-                <h1>Historial de Pagos</h1>
-                <p>' . $fechaHeader . '</p>
-            </div>
-            <div class="info-row">' . $infoExtra . '</div>
-            ' . $pendienteRow . '
-            ' . $generalRow . '
+        // Dashboard cards
+        $cards = '<table class="dash-table"><tr>
+            <td><div class="dash-card orange">
+                <div class="label">Resumen Operativo</div>
+                <div class="value">' . $countVentas . ' ventas</div>
+                <div class="sub">' . $ventasFinalizadas . ' finalizadas | ' . $ventasConCredito . ' con credito' . ($countAbonos > 0 ? ' | ' . $countAbonos . ' abonos' : '') . '</div>
+            </div></td>
+            <td><div class="dash-card green">
+                <div class="label">Ingresos Reales (Cobrado)</div>
+                <div class="value">$' . number_format($sumaBcv, 2) . ' BCV</div>
+                <div class="ves-big">Bs. ' . number_format($sumaVes, 2) . ' VES</div>
+                ' . ($sumaUsd > 0 ? '<div class="value">$' . number_format($sumaUsd, 2) . ' USD</div>' : '') . '
+            </div></td>
+            <td><div class="dash-card red">
+                <div class="label">Cuentas por Cobrar</div>
+                ' . ($sumaPendienteUsd > 0 ? '<div class="value" style="color:#b91c1c;">$' . number_format($sumaPendienteUsd, 2) . ' USD <span style="font-size:8px;color:#999;">(Divisas)</span></div>' : '') . '
+                <div class="value">$' . number_format($sumaPendienteBcv, 2) . ' BCV</div>
+                <div class="ves-big">Bs. ' . number_format($sumaPendienteVes, 2) . ' VES</div>
+            </div></td>
+        </tr></table>';
+
+        $generado = '<div style="text-align:right;font-size:9px;color:#999;margin-bottom:10px;">Generado: ' . $this->fechaEs($ahora->format('Y-m-d')) . ' ' . $ahora->format('h:i A') . '</div>';
+
+        // Tabla A: Ventas
+        $tablaVentas = '';
+        if ($countVentas > 0) {
+            $tablaVentas = '<div class="section-title">Historial de Ventas</div>
             <table>
                 <thead><tr>
-                    <th>Fecha</th><th>Cliente</th><th>Metodos</th><th class="right">Total BCV</th><th class="right">Total VES</th><th>Estado</th><th>Vendedor</th>
+                    <th>Fecha</th><th>Cliente</th><th>Metodos</th><th class="right">Total BCV</th><th class="right">Pagado VES</th><th class="right">Saldo Pend.</th><th>Estado</th><th>Vendedor</th>
                 </tr></thead>
-                <tbody>' . $filas . '</tbody>
-            </table>
+                <tbody>' . $filasVentas . '</tbody>
+            </table>';
+        }
+
+        // Tabla B: Abonos
+        $tablaAbonos = '';
+        if ($countAbonos > 0) {
+            $tablaAbonos = '<div class="section-title">Historial de Abonos / Cobranza</div>
+            <table>
+                <thead><tr>
+                    <th>Fecha</th><th>Cliente</th><th class="right">Monto BCV</th><th class="right">Monto VES</th><th>Metodo</th>
+                </tr></thead>
+                <tbody>' . $filasAbonos . '</tbody>
+            </table>';
+        }
+
+        return '<!DOCTYPE html><html><head><meta charset="utf-8">' . $css . '</head><body>
+            <div class="header">
+                <h1>Historial de Pagos' . $filtroTitulo . '</h1>
+                <p>' . $prefijo . $fechaHeader . '</p>
+            </div>
+            ' . $cards . '
+            ' . $generado . '
+            ' . $tablaVentas . '
+            ' . $tablaAbonos . '
             <div class="footer">Sistema de Ventas e Inventarios &copy; ' . date('Y') . ' - Pagina generada automaticamente</div>
         </body></html>';
     }
