@@ -63,6 +63,10 @@ $rutasPorModulo = [
         'productos_tipos_eliminar'=> '/productos/tipos/eliminar',
         'productos_verificar_codigo' => '/productos/verificar-codigo',
         'productos_tipos_verificar'  => '/productos/tipos/verificar',
+        'productos_proveedores_listar'   => '/productos/proveedores/listar',
+        'productos_proveedores_guardar'  => '/productos/proveedores/guardar',
+        'productos_proveedores_eliminar' => '/productos/proveedores/eliminar',
+        'productos_proveedores_verificar' => '/productos/proveedores/verificar',
     ],
     'entradas' => [
         'entradas'               => '/entradas',

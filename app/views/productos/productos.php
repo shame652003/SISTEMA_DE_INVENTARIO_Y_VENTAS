@@ -41,6 +41,9 @@ $tipos = $tipos ?? [];
                 <div class="card-body text-center">
                     <h5 class="card-title mb-3"><i class="bi bi-image me-2"></i>Imagen del Producto</h5>
                     <div id="preview-container" class="mb-3 position-relative">
+                        <button type="button" class="btn btn-danger btn-sm rounded-circle position-absolute top-0 end-0 m-1" id="btn-eliminar-imagen" title="Eliminar imagen" style="display:none; z-index:10;">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
                         <img id="img-preview" src="<?= BASE_URL ?>/assets/img/placeholder-product.svg" alt="Vista previa" class="img-fluid rounded border" style="max-height: 250px; object-fit: cover;">
                         <video id="camara-video" class="img-fluid rounded border" style="max-height: 250px; object-fit: cover; display:none;" autoplay playsinline></video>
                         <canvas id="camara-canvas" style="display:none;"></canvas>
@@ -99,6 +102,9 @@ $tipos = $tipos ?? [];
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
                                     <input type="text" class="form-control" id="codigo" name="codigo" placeholder="Ej: BUJI0001" required autocomplete="off" style="text-transform:uppercase;">
+                                    <button type="button" class="btn btn-outline-secondary" id="btn-generar-codigo" title="Generar código a partir del nombre">
+                                        <i class="bi bi-lightning-charge"></i>
+                                    </button>
                                 </div>
                             </div>
 
@@ -122,6 +128,24 @@ $tipos = $tipos ?? [];
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-award"></i></span>
                                     <input type="text" class="form-control" id="marca" name="marca" placeholder="Ej: Yamaha, Honda" disabled autocomplete="off">
+                                </div>
+                            </div>
+
+                            <!-- Proveedor -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="acProveedor">
+                                    <label class="form-check-label" for="acProveedor">
+                                        ¿Incluir proveedor?
+                                    </label>
+                                </div>
+                                <div class="input-group">
+                                    <select class="form-select" id="idProveedor" name="idProveedor" disabled>
+                                        <option value="">Seleccione...</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modal-proveedor" title="Nuevo proveedor">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -159,6 +183,7 @@ $tipos = $tipos ?? [];
                                 <th>Nombre</th>
                                 <th>Tipo</th>
                                 <th>Marca</th>
+                                <th>Proveedor</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
@@ -191,6 +216,30 @@ $tipos = $tipos ?? [];
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-success">Guardar Tipo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nuevo Proveedor -->
+<div class="modal fade" id="modal-proveedor" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="bi bi-truck me-2"></i>Nuevo Proveedor</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form id="form-proveedor">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="proveedor-nombre" class="form-label">Nombre del Proveedor</label>
+                        <input type="text" class="form-control" id="proveedor-nombre" name="nombre" required autocomplete="off" placeholder="Ej: Importadora XYZ, C.A.">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-info">Guardar Proveedor</button>
                 </div>
             </form>
         </div>

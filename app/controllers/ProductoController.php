@@ -22,6 +22,7 @@ class ProductoController extends Controller
             'titulo' => 'Gestión de Productos',
             'seccion' => 'productos',
             'tipos' => $producto->obtenerTipos(),
+            'proveedores' => $producto->obtenerProveedores(),
         ], $this->datosModulo('productos', 'productos.js')), 'app');
     }
 
@@ -37,7 +38,7 @@ class ProductoController extends Controller
         }
         $search  = $_POST['search']['value'] ?? '';
 
-        $colMap  = ['', 'codigo', 'nombre', 'tipo_producto', 'marca'];
+        $colMap  = ['', 'codigo', 'nombre', 'tipo_producto', 'marca', 'nombre_proveedor'];
         $colIdx  = (int) ($_POST['order'][0]['column'] ?? 1);
         $orderBy = $colMap[$colIdx] ?? 'codigo';
         $orderDir = strtoupper($_POST['order'][0]['dir'] ?? 'ASC');
@@ -166,6 +167,7 @@ class ProductoController extends Controller
         $nombre = strtoupper(trim($_POST['nombre'] ?? ''));
         $marca = ucwords(trim($_POST['marca'] ?? ''));
         $idTipoA = (int) ($_POST['idTipoA'] ?? 0);
+        $idProveedor = isset($_POST['idProveedor']) && $_POST['idProveedor'] !== '' ? (int)$_POST['idProveedor'] : 0;
 
         if (empty($codigo) || empty($nombre) || $idTipoA <= 0) {
             $this->json(['ok' => false, 'mensaje' => 'Código, nombre y tipo son obligatorios.']);
@@ -196,6 +198,7 @@ class ProductoController extends Controller
             'nombre' => $nombre,
             'marca' => $marca,
             'idTipoA' => $idTipoA,
+            'idProveedor' => $idProveedor > 0 ? $idProveedor : null,
         ];
 
         if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === UPLOAD_ERR_OK) {
@@ -210,7 +213,15 @@ class ProductoController extends Controller
             $mensaje = $ok ? 'Producto registrado correctamente.' : 'Error al registrar el producto.';
         } else {
             $p = $producto->obtenerPorId((int) $id);
-            if ($p && isset($datos['imgproducto']) && !empty($p['imgproducto'])) {
+            if (isset($_POST['eliminar_imagen']) && $_POST['eliminar_imagen'] === '1') {
+                if ($p && !empty($p['imgproducto'])) {
+                    $rutaEliminar = __DIR__ . '/../../public/' . $p['imgproducto'];
+                    if (file_exists($rutaEliminar)) {
+                        unlink($rutaEliminar);
+                    }
+                }
+                $datos['imgproducto'] = null;
+            } elseif ($p && isset($datos['imgproducto']) && !empty($p['imgproducto'])) {
                 $rutaVieja = __DIR__ . '/../../public/' . $p['imgproducto'];
                 if (file_exists($rutaVieja)) {
                     unlink($rutaVieja);
@@ -319,5 +330,64 @@ class ProductoController extends Controller
             'ok' => $ok,
             'mensaje' => $ok ? 'Tipo eliminado correctamente.' : 'Error al eliminar el tipo.'
         ]);
+    }
+
+    /* ===== CRUD proveedores ===== */
+
+    public function listarProveedores(): void
+    {
+        if (!$this->verificarPermiso('productos')) return;
+        $producto = new Producto();
+        $proveedores = $producto->obtenerProveedores();
+        $this->json(['data' => $proveedores ?: []]);
+    }
+
+    public function guardarProveedor(): void
+    {
+        if (!$this->verificarPermiso('productos')) return;
+        $nombre = ucwords(trim($_POST['nombre'] ?? ''));
+        if (empty($nombre)) {
+            $this->json(['ok' => false, 'mensaje' => 'El nombre del proveedor es obligatorio.']);
+            return;
+        }
+        $producto = new Producto();
+        if ($producto->existeProveedor($nombre)) {
+            $this->json(['ok' => false, 'mensaje' => 'El proveedor ya está registrado.']);
+            return;
+        }
+        $ok = $producto->crearProveedor(['nombre' => $nombre, 'status' => 1]);
+        $this->json([
+            'ok' => $ok,
+            'mensaje' => $ok ? 'Proveedor registrado correctamente.' : 'Error al registrar el proveedor.'
+        ]);
+    }
+
+    public function eliminarProveedor(): void
+    {
+        if (!$this->verificarPermiso('productos')) return;
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $this->json(['ok' => false, 'mensaje' => 'ID inválido.']);
+            return;
+        }
+        $producto = new Producto();
+        if ($producto->proveedorEnUso($id)) {
+            $this->json(['ok' => false, 'mensaje' => 'No se puede eliminar el proveedor porque está asignado a productos activos.']);
+            return;
+        }
+        $ok = $producto->eliminarProveedor($id);
+        $this->json([
+            'ok' => $ok,
+            'mensaje' => $ok ? 'Proveedor eliminado correctamente.' : 'Error al eliminar el proveedor.'
+        ]);
+    }
+
+    public function verificarProveedor(): void
+    {
+        if (!$this->verificarPermiso('productos')) return;
+        $nombre = trim($_POST['nombre'] ?? '');
+        $producto = new Producto();
+        $existe = $producto->existeProveedor($nombre);
+        $this->json(['ok' => true, 'existe' => $existe]);
     }
 }

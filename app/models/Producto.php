@@ -11,8 +11,10 @@ class Producto extends Model
     public function obtenerTodos(): array
     {
         return $this->fetchAll(
-            "SELECT p.*, tp.tipo AS tipo_producto FROM {$this->table} p
+            "SELECT p.*, tp.tipo AS tipo_producto, pr.nombre AS nombre_proveedor
+             FROM {$this->table} p
              INNER JOIN tipo_productos tp ON tp.idTipoA = p.idTipoA
+             LEFT JOIN proveedores pr ON pr.idProveedor = p.idProveedor
              WHERE p.status = 1
              ORDER BY p.idproducto DESC"
         );
@@ -21,13 +23,15 @@ class Producto extends Model
     public function obtenerTodosPaginado(int $start, int $length, string $search, string $orderBy, string $orderDir): array
     {
         $orderDir = strtoupper($orderDir) === 'DESC' ? 'DESC' : 'ASC';
-        $allowed = ['codigo', 'nombre', 'tipo_producto', 'marca'];
+        $allowed = ['codigo', 'nombre', 'tipo_producto', 'marca', 'nombre_proveedor'];
         $orderBy = in_array($orderBy, $allowed) ? $orderBy : 'codigo';
 
         $sql = "SELECT p.idproducto, p.codigo, p.nombre, p.marca, p.imgproducto,
-                       tp.tipo AS tipo_producto
+                       tp.tipo AS tipo_producto,
+                       pr.nombre AS nombre_proveedor
                 FROM {$this->table} p
                 INNER JOIN tipo_productos tp ON tp.idTipoA = p.idTipoA
+                LEFT JOIN proveedores pr ON pr.idProveedor = p.idProveedor
                 WHERE p.status = 1";
 
         $params = [];
@@ -39,7 +43,7 @@ class Producto extends Model
             $params[] = $s;
         }
 
-        $sql .= " ORDER BY p.{$orderBy} {$orderDir}";
+        $sql .= " ORDER BY {$orderBy} {$orderDir}";
         if ($length > 0) {
             $sql .= " LIMIT {$start}, {$length}";
         }
@@ -67,8 +71,10 @@ class Producto extends Model
     public function obtenerPorId(int $id): ?array
     {
         return $this->fetch(
-            "SELECT p.*, tp.tipo AS tipo_producto FROM {$this->table} p
+            "SELECT p.*, tp.tipo AS tipo_producto, pr.nombre AS nombre_proveedor
+             FROM {$this->table} p
              INNER JOIN tipo_productos tp ON tp.idTipoA = p.idTipoA
+             LEFT JOIN proveedores pr ON pr.idProveedor = p.idProveedor
              WHERE p.idproducto = ? AND p.status = 1",
             [$id]
         );
@@ -154,6 +160,40 @@ class Producto extends Model
             "SELECT COUNT(*) AS total FROM tipo_productos WHERE LOWER(tipo) = LOWER(?) AND status = 1",
             [$tipo]
         );
+        return ($res['total'] ?? 0) > 0;
+    }
+
+    /* ===== CRUD proveedores ===== */
+
+    public function obtenerProveedores(): array
+    {
+        return $this->fetchAll("SELECT * FROM proveedores WHERE status = 1 ORDER BY nombre");
+    }
+
+    public function existeProveedor(string $nombre): bool
+    {
+        $res = $this->fetch(
+            "SELECT COUNT(*) AS total FROM proveedores WHERE LOWER(nombre) = LOWER(?) AND status = 1",
+            [$nombre]
+        );
+        return ($res['total'] ?? 0) > 0;
+    }
+
+    public function crearProveedor(array $datos): bool
+    {
+        $campos = implode(', ', array_keys($datos));
+        $placeholders = implode(', ', array_fill(0, count($datos), '?'));
+        return $this->execute("INSERT INTO proveedores ($campos) VALUES ($placeholders)", array_values($datos));
+    }
+
+    public function eliminarProveedor(int $id): bool
+    {
+        return $this->execute("UPDATE proveedores SET status = 0 WHERE idProveedor = ?", [$id]);
+    }
+
+    public function proveedorEnUso(int $idProveedor): bool
+    {
+        $res = $this->fetch("SELECT COUNT(*) AS total FROM {$this->table} WHERE idProveedor = ? AND status = 1", [$idProveedor]);
         return ($res['total'] ?? 0) > 0;
     }
 

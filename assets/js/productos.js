@@ -6,6 +6,7 @@ $(function () {
 
     const modalListaProductos = new bootstrap.Modal('#modal-lista-productos');
     const modalTipoProducto = new bootstrap.Modal('#modal-tipo-producto');
+    const modalProveedor = new bootstrap.Modal('#modal-proveedor');
     let tablaProductos = null;
     let eliminandoProducto = false;
 
@@ -14,6 +15,7 @@ $(function () {
     const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
     let cameraStream = null;
     let fotoBlob = null;
+    let eliminarImagen = false;
 
     function mostrarModoNormal() {
         $('#camara-video').hide();
@@ -25,6 +27,7 @@ $(function () {
         $('#btn-cancelar-camara').hide();
         $('#camara-controles').show();
         $('#camara-acciones').hide();
+        $('#btn-eliminar-imagen').hide();
     }
 
     function mostrarModoCamara() {
@@ -92,10 +95,14 @@ $(function () {
         $('#btn-guardar-texto').text('Registrar');
         $('#img-preview').attr('src', window.BASE_URL + '/assets/img/placeholder-product.svg');
         $('#marca').prop('disabled', true);
+        $('#acProveedor').prop('checked', false);
+        $('#idProveedor').prop('disabled', true).val('');
         Validaciones.limpiarErrores('#form-producto');
         $('#btn-guardar').prop('disabled', false);
         detenerCamara();
         fotoBlob = null;
+        eliminarImagen = false;
+        $('#btn-eliminar-imagen').hide();
         mostrarModoNormal();
     }
 
@@ -109,6 +116,19 @@ $(function () {
                 $select.html('<option value=""></option>');
                 (res.data || []).forEach(function (t) {
                     $select.append('<option value="' + t.idTipoA + '">' + t.tipo + '</option>');
+                });
+                if (valorActual) $select.val(valorActual);
+            });
+    }
+
+    function cargarProveedores() {
+        Ajax.post(window.ROUTES.productos_proveedores_listar)
+            .done(function (res) {
+                const $select = $('#idProveedor');
+                const valorActual = $select.val();
+                $select.html('<option value=""></option>');
+                (res.data || []).forEach(function (p) {
+                    $select.append('<option value="' + p.idProveedor + '">' + p.nombre + '</option>');
                 });
                 if (valorActual) $select.val(valorActual);
             });
@@ -156,6 +176,12 @@ $(function () {
                     }
                 },
                 {
+                    data: 'nombre_proveedor',
+                    render: function (data) {
+                        return data || '-';
+                    }
+                },
+                {
                     data: 'idproducto',
                     render: function (data, type, row) {
                         if (type === 'display') {
@@ -191,6 +217,8 @@ $(function () {
     $('#imagen').on('change', function () {
         if (this.files[0]) {
             if (mostrarPreviewImagen(this.files[0])) {
+                eliminarImagen = false;
+                $('#btn-eliminar-imagen').hide();
                 mostrarModoPreview();
             } else {
                 mostrarModoNormal();
@@ -248,9 +276,30 @@ $(function () {
     $('#btn-cancelar-camara').on('click', function () {
         detenerCamara();
         fotoBlob = null;
+        eliminarImagen = false;
         $('#imagen').val('');
         $('#img-preview').attr('src', window.BASE_URL + '/assets/img/placeholder-product.svg');
         mostrarModoNormal();
+    });
+
+    $('#btn-eliminar-imagen').on('click', function () {
+        Swal.fire({
+            icon: 'warning',
+            title: '¿Eliminar imagen?',
+            text: 'La imagen se eliminará al guardar los cambios. Debes confirmar con el botón Actualizar.',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#dc3545'
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                eliminarImagen = true;
+                $('#img-preview').attr('src', window.BASE_URL + '/assets/img/placeholder-product.svg');
+                $('#btn-eliminar-imagen').hide();
+                fotoBlob = null;
+                $('#imagen').val('');
+            }
+        });
     });
 
     $('#btn-capturar').on('click', function () {
@@ -263,6 +312,8 @@ $(function () {
 
         canvas.toBlob(function (blob) {
             fotoBlob = blob;
+            eliminarImagen = false;
+            $('#btn-eliminar-imagen').hide();
             const url = URL.createObjectURL(blob);
             $('#img-preview').attr('src', url);
             detenerCamara();
@@ -279,12 +330,29 @@ $(function () {
         if (!this.checked) $('#marca').val('');
     });
 
+    $('#acProveedor').on('change', function () {
+        $('#idProveedor').prop('disabled', !this.checked);
+        if (!this.checked) $('#idProveedor').val('');
+    });
+
     $('#btn-cancelar').on('click', function () {
         resetFormulario();
     });
 
     $('#btn-ver-productos').on('click', function () {
         initDataTable();
+    });
+
+    $('#btn-generar-codigo').on('click', function () {
+        const nombre = $('#nombre').val().trim();
+        if (!nombre) {
+            Swal.fire({ icon: 'info', title: 'Aviso', text: 'Primero ingrese el nombre del producto.', timer: 2000, showConfirmButton: false });
+            return;
+        }
+        let primera = nombre.split(/\s+/)[0].toUpperCase();
+        primera = primera.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/Ñ/g, 'N').replace(/[^A-Z0-9]/g, '');
+        const codigo = primera.substring(0, 4).padEnd(4, 'X') + '0001';
+        $('#codigo').val(codigo).trigger('blur');
     });
 
     /* ===== Validaciones en tiempo real ===== */
@@ -312,6 +380,23 @@ $(function () {
         Validaciones.tipoUnico('#tipo-nombre', window.ROUTES.productos_tipos_verificar, 'Tipo');
     });
 
+    $('#proveedor-nombre').on('blur', function () {
+        Validaciones.formatearCapitalizacion('#proveedor-nombre');
+        const valor = $(this).val().trim();
+        if (!valor) return;
+        Ajax.post(window.ROUTES.productos_proveedores_verificar, { nombre: valor })
+            .done(function (res) {
+                if (res.ok && res.existe) {
+                    $('#proveedor-nombre').addClass('is-invalid');
+                    $('#proveedor-nombre').siblings('.invalid-feedback').remove();
+                    $('#proveedor-nombre').after('<div class="invalid-feedback">El proveedor "' + valor + '" ya está registrado.</div>');
+                } else {
+                    $('#proveedor-nombre').removeClass('is-invalid');
+                    $('#proveedor-nombre').siblings('.invalid-feedback').remove();
+                }
+            });
+    });
+
     /* ===== Guardar Producto ===== */
 
     $('#form-producto').on('submit', function (e) {
@@ -331,9 +416,16 @@ $(function () {
         if (!$('#acMarca').is(':checked')) {
             formData.set('marca', '');
         }
+        if (!$('#acProveedor').is(':checked')) {
+            formData.set('idProveedor', '');
+        }
 
         if (fotoBlob) {
             formData.set('imagen', fotoBlob, 'foto_capturada.jpg');
+        }
+
+        if (eliminarImagen) {
+            formData.set('eliminar_imagen', '1');
         }
 
         Ajax.upload(window.ROUTES.productos_guardar, formData)
@@ -389,11 +481,22 @@ $(function () {
                     $('#marca').prop('disabled', true).val('');
                 }
 
+                if (p.idProveedor) {
+                    $('#acProveedor').prop('checked', true);
+                    $('#idProveedor').prop('disabled', false).val(p.idProveedor);
+                } else {
+                    $('#acProveedor').prop('checked', false);
+                    $('#idProveedor').prop('disabled', true).val('');
+                }
+
                 if (p.imgproducto) {
                     $('#img-preview').attr('src', window.BASE_URL + '/' + p.imgproducto);
+                    $('#btn-eliminar-imagen').show();
                 } else {
                     $('#img-preview').attr('src', window.BASE_URL + '/assets/img/placeholder-product.svg');
+                    $('#btn-eliminar-imagen').hide();
                 }
+                eliminarImagen = false;
 
                 $('#btn-guardar-texto').text('Actualizar');
                 modalListaProductos.hide();
@@ -498,6 +601,47 @@ $(function () {
             });
     });
 
+    /* ===== Guardar Proveedor ===== */
+
+    $('#form-proveedor').on('submit', function (e) {
+        e.preventDefault();
+        Validaciones.limpiarErrores('#form-proveedor');
+        if (!Validaciones.validarFormulario('#form-proveedor')) return;
+
+        Validaciones.formatearCapitalizacion('#proveedor-nombre');
+
+        const $btn = $(this).find('button[type="submit"]');
+        if ($btn.prop('disabled')) return;
+        $btn.prop('disabled', true);
+
+        Ajax.post(window.ROUTES.productos_proveedores_guardar, $(this).serialize())
+            .done(function (res) {
+                if (res.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Éxito',
+                        text: res.mensaje,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    $('#form-proveedor')[0].reset();
+                    modalProveedor.hide();
+                    cargarProveedores();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: res.mensaje });
+                }
+            }).fail(function (xhr) {
+                let msg = 'Error al guardar el proveedor.';
+                try {
+                    const r = JSON.parse(xhr.responseText);
+                    if (r.mensaje) msg = r.mensaje;
+                } catch (e) {}
+                Swal.fire({ icon: 'error', title: 'Error', text: msg });
+            }).always(function () {
+                $btn.prop('disabled', false);
+            });
+    });
+
     /* ===== Inicialización ===== */
 
     mostrarModoNormal();
@@ -506,5 +650,10 @@ $(function () {
         $('#tipo-nombre').trigger('focus');
     });
 
+    $('#modal-proveedor').on('shown.bs.modal', function () {
+        $('#proveedor-nombre').trigger('focus');
+    });
+
     cargarTipos();
+    cargarProveedores();
 });

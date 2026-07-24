@@ -110,13 +110,19 @@ VALUES
         status TINYINT(1) NOT NULL DEFAULT 1,
         UNIQUE KEY uk_tipo_productos_tipo (tipo)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+    CREATE TABLE proveedores (
+        idProveedor INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(100) NOT NULL,
+        status TINYINT(1) NOT NULL DEFAULT 1,
+        UNIQUE KEY uk_proveedores_nombre (nombre)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
     CREATE TABLE producto (
         idproducto INT AUTO_INCREMENT PRIMARY KEY,
         codigo VARCHAR(50) NOT NULL,
         imgproducto VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
         nombre VARCHAR(100) NOT NULL,
         marca VARCHAR(50) NOT NULL,
+        idProveedor INT NOT NULL,
         stock DECIMAL(12,3) NOT NULL DEFAULT 0.000,
         stock_minimo DECIMAL(12,3) NOT NULL DEFAULT 5.000,
         precio_costo_usd DECIMAL(12,2) NOT NULL,
@@ -126,8 +132,11 @@ VALUES
         status TINYINT(1) NOT NULL DEFAULT 1,
         UNIQUE KEY uk_producto_codigo (codigo),
         KEY idx_producto_tipo (idTipoA),
+        KEY idx_producto_proveedor (idProveedor),
         CONSTRAINT fk_producto_tipo FOREIGN KEY (idTipoA) REFERENCES tipo_productos(idTipoA)
             ON UPDATE CASCADE,
+        CONSTRAINT fk_producto_proveedor FOREIGN KEY (idProveedor) REFERENCES proveedores(idProveedor)
+            ON UPDATE CASCADE ON DELETE SET NULL,
         CHECK (stock >= 0),
         CHECK (stock_minimo >= 0),
         CHECK (precio_costo_usd >= 0),

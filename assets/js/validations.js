@@ -160,7 +160,7 @@ const Validaciones = {
                         resolve(false);
                     } else {
                         $input.removeClass('is-invalid');
-                        $input.siblings('.invalid-feedback').remove();
+                        Validaciones._limpiarError(selector);
                         resolve(true);
                     }
                 })
@@ -215,7 +215,7 @@ const Validaciones = {
                         resolve(false);
                     } else {
                         $input.removeClass('is-invalid');
-                        $input.siblings('.invalid-feedback').remove();
+                        Validaciones._limpiarError(selector);
                         resolve(true);
                     }
                 })
@@ -242,7 +242,7 @@ const Validaciones = {
                         resolve(false);
                     } else {
                         $input.removeClass('is-invalid');
-                        $input.siblings('.invalid-feedback').remove();
+                        Validaciones._limpiarError(selector);
                         resolve(true);
                     }
                 })
@@ -285,7 +285,24 @@ const Validaciones = {
      * Muestra mensaje de error debajo del campo
      */
     _mostrarError: function (selector, mensaje) {
-        $(selector).siblings('.invalid-feedback').remove();
-        $(selector).after(`<div class="invalid-feedback">${mensaje}</div>`);
+        const $el = $(selector);
+        const $inputGroup = $el.closest('.input-group');
+        if ($inputGroup.length) {
+            $inputGroup.siblings('.invalid-feedback').remove();
+            $inputGroup.after('<div class="invalid-feedback mt-0" style="display:block">' + mensaje + '</div>');
+        } else {
+            $el.siblings('.invalid-feedback').remove();
+            $el.after('<div class="invalid-feedback">' + mensaje + '</div>');
+        }
+    },
+
+    _limpiarError: function (selector) {
+        const $el = $(selector);
+        const $inputGroup = $el.closest('.input-group');
+        if ($inputGroup.length) {
+            $inputGroup.siblings('.invalid-feedback').remove();
+        } else {
+            $el.siblings('.invalid-feedback').remove();
+        }
     }
 };
